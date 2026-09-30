@@ -1,23 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Lexend+Giga:wght@400;500;600&display=swap");
+/* Colors and fonts come from variables.css (shared by the whole team).*/
  
-/* Planet Estyle: font file lives in public/fonts/planet-estyle.ttf */
-@font-face {
-  font-family: "Planet Estyle";
-  src: url("/fonts/planet-estyle.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
- 
-/*taken from mock*/
-:root {
-  --red: #b00000;
-  --black: #000000;
-  --white: #ffffff;
-  --grey-bg: #efefef;   /* disabled button background */
-  --grey-text: #aaaaaa; /* disabled button text */
-  --font-display: "Planet Estyle", "Chakra Petch", sans-serif;
-  --font-body: "Lexend Giga", Arial, sans-serif;
+/* Values only this screen needs */
+.dashboard {
+  --disabled-bg: #e6e0d8;
+  --disabled-text: #9a9288;
   --radius: 22px;
 }
  
@@ -28,16 +14,16 @@
   min-height: 100vh;
   margin: 0 auto;
   padding: 32px 24px 48px;
-  background: var(--white);
-  color: var(--black);
-  font-family: var(--font-body);
+  background: var(--color-background);
+  color: var(--color-black);
+  font-family: var(--font-main);
   text-align: center;
 }
  
 .dashboard h1,
 .dashboard h2 {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-title);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -58,14 +44,14 @@
  
 .dashboard-header p {
   margin: 8px 0 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
   letter-spacing: 0.03em;
 }
  
 /* ---------- Queue card ---------- */
 .queue-card [role="status"] {
   margin: 16px 0 8px;
-  font-family: var(--font-display);
+  font-family: var(--font-title);
   font-weight: 700;
   font-size: 2rem;
   line-height: 1.15;
@@ -74,11 +60,11 @@
  
 .queue-card p {
   margin: 4px 0;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
  
 .queue-card strong {
-  color: var(--red);
+  color: var(--color-red);
 }
  
 .queue-buttons {
@@ -94,35 +80,39 @@
   padding: 16px 20px;
   border: none;
   border-radius: var(--radius);
-  background: var(--red);
-  color: var(--white);
-  font-family: var(--font-body);
-  font-size: 0.95rem;
+  background: var(--color-red);
+  color: var(--color-white);
+  font-family: var(--font-main);
+  font-size: 1.05rem;
   font-weight: 500;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: lowercase;
   cursor: pointer;
 }
  
-/* secondary buttons (View Menu, See all) use black like "sign up" */
+/* secondary buttons (View Menu, See all) use black */
 .dashboard section:not(.queue-card) > button {
   margin-top: 16px;
-  background: var(--black);
+  background: var(--color-black);
 }
  
 .dashboard button:hover:not(:disabled) {
-  filter: brightness(1.15);
+  background: var(--color-red-hover);
+}
+ 
+.dashboard section:not(.queue-card) > button:hover:not(:disabled) {
+  background: #2a2a2a;
 }
  
 .dashboard button:focus-visible {
-  outline: 3px solid var(--black);
+  outline: 3px solid var(--color-black);
   outline-offset: 3px;
 }
  
 /* disabled = grey, same as the mockups */
 .dashboard button:disabled {
-  background: var(--grey-bg);
-  color: var(--grey-text);
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
   cursor: not-allowed;
 }
  
@@ -136,8 +126,8 @@
  
 .services li {
   padding: 14px 4px;
-  border-bottom: 1px solid var(--grey-bg);
-  font-size: 0.9rem;
+  border-bottom: 1px solid var(--color-tan);
+  font-size: 1rem;
 }
  
 .services li:last-child {
@@ -155,9 +145,9 @@
 .notification {
   margin-bottom: 10px;
   padding: 12px 14px;
-  border-left: 4px solid var(--red);
-  background: var(--grey-bg);
-  font-size: 0.85rem;
+  border-left: 4px solid var(--color-red);
+  background: var(--color-cream);
+  font-size: 0.95rem;
 }
  
 /* ---------- Larger screens ---------- */
