@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import './MainAuth.css'
+import tacoExpress from '../assets/tacosexpress.png'
 
 function MainPage() {
     return (
@@ -9,7 +10,11 @@ function MainPage() {
                 <p className="main-slogan">Join the line. Skip the wait.</p>
 
                 <div className="clipart-space">
-                    {/* Food truck image will go here later */}
+                    <img
+                        src={tacoExpress}
+                        alt="Taco Express food truck"
+                        className="food-truck-image"
+                    />
                 </div>
 
                 <div className="main-buttons">

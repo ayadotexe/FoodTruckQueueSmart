@@ -30,8 +30,16 @@
 
 .clipart-space {
   width: 80%;
-  height: 500px;
-  margin: 25px auto;
+  margin: 35px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.food-truck-image {
+  width: 500px;
+  height: auto;
+  display: block;
 }
 
 .main-buttons {
