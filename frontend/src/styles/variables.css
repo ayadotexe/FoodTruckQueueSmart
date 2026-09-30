@@ -1,0 +1,16 @@
+:root {
+  --color-background: #fff8f0;
+
+  --color-red: #c00000;
+  --color-red-hover: #9f0000;
+
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  --color-cream: #f3e5d0;
+  --color-tan: #d9b38c;
+  --color-green: #4f6f52;
+
+  --font-title: 'Baloo 2', sans-serif;
+  --font-main: 'Montserrat', sans-serif;
+}
