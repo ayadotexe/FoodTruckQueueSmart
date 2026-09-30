@@ -1,0 +1,168 @@
+@import url("https://fonts.googleapis.com/css2?family=Lexend+Giga:wght@400;500;600&display=swap");
+ 
+/* Planet Estyle: font file lives in public/fonts/planet-estyle.ttf */
+@font-face {
+  font-family: "Planet Estyle";
+  src: url("/fonts/planet-estyle.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+/*taken from mock*/
+:root {
+  --red: #b00000;
+  --black: #000000;
+  --white: #ffffff;
+  --grey-bg: #efefef;   /* disabled button background */
+  --grey-text: #aaaaaa; /* disabled button text */
+  --font-display: "Planet Estyle", "Chakra Petch", sans-serif;
+  --font-body: "Lexend Giga", Arial, sans-serif;
+  --radius: 22px;
+}
+ 
+/* ---------- Page layout (mobile first) ---------- */
+.dashboard {
+  box-sizing: border-box;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  background: var(--white);
+  color: var(--black);
+  font-family: var(--font-body);
+  text-align: center;
+}
+ 
+.dashboard h1,
+.dashboard h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+ 
+.dashboard h1 {
+  font-size: 2.6rem;
+  line-height: 1.05;
+}
+ 
+.dashboard h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+}
+ 
+.dashboard section {
+  margin-top: 40px;
+}
+ 
+.dashboard-header p {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+}
+ 
+/* ---------- Queue card ---------- */
+.queue-card [role="status"] {
+  margin: 16px 0 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+ 
+.queue-card p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+ 
+.queue-card strong {
+  color: var(--red);
+}
+ 
+.queue-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+ 
+/* ---------- Buttons ---------- */
+.dashboard button {
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--red);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+ 
+/* secondary buttons (View Menu, See all) use black like "sign up" */
+.dashboard section:not(.queue-card) > button {
+  margin-top: 16px;
+  background: var(--black);
+}
+ 
+.dashboard button:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+ 
+.dashboard button:focus-visible {
+  outline: 3px solid var(--black);
+  outline-offset: 3px;
+}
+ 
+/* disabled = grey, same as the mockups */
+.dashboard button:disabled {
+  background: var(--grey-bg);
+  color: var(--grey-text);
+  cursor: not-allowed;
+}
+ 
+/* ---------- Active services ---------- */
+.services {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+ 
+.services li {
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--grey-bg);
+  font-size: 0.9rem;
+}
+ 
+.services li:last-child {
+  border-bottom: none;
+}
+ 
+/* ---------- Notifications ---------- */
+.notifications ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+ 
+.notification {
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--red);
+  background: var(--grey-bg);
+  font-size: 0.85rem;
+}
+ 
+/* ---------- Larger screens ---------- */
+@media (min-width: 600px) {
+  .dashboard {
+    padding-top: 56px;
+  }
+}
