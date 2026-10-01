@@ -32,8 +32,7 @@ function Signup() {
                 <p className="auth-subtitle">Sign up to join the queue and place an order.</p>
 
                 <form className="auth-form" onSubmit={handleSubmit}>
-                    
-                    <div className="form-row">
+
                     <div className="form-group">
                         <label htmlFor="firstName">First name*</label>
                         <input
@@ -55,8 +54,7 @@ function Signup() {
                             required
                         />
                     </div>
-                    </div>
-                    
+
                     <div className="form-group">
                         <label htmlFor="email">Email*</label>
                         <input
