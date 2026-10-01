@@ -1,0 +1,194 @@
+/* Colors and fonts come from variables.css. Do not redefine :root here. */
+
+/* Values only this screen needs */
+.join-queue {
+  --disabled-bg: #e6e0d8;
+  --disabled-text: #9a9288;
+  --radius: 22px;
+}
+
+/* ---------- Page layout (mobile first) ---------- */
+.join-queue {
+  box-sizing: border-box;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 24px 48px;
+  background: var(--color-background);
+  color: var(--color-black);
+  font-family: var(--font-main);
+  text-align: center;
+}
+
+.join-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.join-queue h1 {
+  align-self: center;
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 2.4rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+/* ---------- Service list ---------- */
+.service-list {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+  text-align: left;
+}
+
+.service-list legend {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.3rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.service-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  border: 2px solid var(--color-tan);
+  border-radius: 14px;
+  background: var(--color-white);
+  cursor: pointer;
+}
+
+.service-option:hover {
+  border-color: var(--color-red);
+}
+
+/* the chosen row (class added by the JSX) */
+.service-option.selected {
+  border-color: var(--color-red);
+  background: var(--color-cream);
+}
+
+.service-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-red);
+}
+
+.service-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.service-meta {
+  font-size: 0.85rem;
+  color: var(--color-green);
+}
+
+/* locked after joining a queue */
+.service-list:disabled .service-option {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.service-list:disabled .service-option:hover {
+  border-color: var(--color-tan);
+}
+
+.service-list:disabled .service-option.selected {
+  border-color: var(--color-red);
+}
+
+/* ---------- Messages ---------- */
+.join-queue .error {
+  margin: 16px 0 0;
+  color: var(--color-red);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.join-queue .wait {
+  margin: 20px 0 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.join-queue .wait strong {
+  color: var(--color-red);
+}
+
+/* ---------- Buttons ---------- */
+.join-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.join-queue button {
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-red);
+  color: var(--color-white);
+  font-family: var(--font-main);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+
+.join-queue button:hover:not(:disabled) {
+  background: var(--color-red-hover);
+}
+
+.join-queue button:focus-visible,
+.service-option:focus-within {
+  outline: 3px solid var(--color-black);
+  outline-offset: 3px;
+}
+
+.join-queue button:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+/* "view queue status" */
+.join-queue .secondary {
+  margin-top: 14px;
+  background: var(--color-black);
+}
+
+.join-queue .secondary:hover:not(:disabled) {
+  background: #2a2a2a;
+}
+
+/* small back button in the top-left */
+.join-queue .back-button {
+  width: auto;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+
+/* ---------- Larger screens ---------- */
+@media (min-width: 600px) {
+  .join-queue {
+    padding-top: 48px;
+  }
+}
