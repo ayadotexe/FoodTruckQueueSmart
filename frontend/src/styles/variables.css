@@ -1,4 +1,14 @@
+
+@font-face {
+  font-family: 'PlanetEstyle';
+  src: url('./planetestyle.TTF') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+ }
+
 :root {
+
   --color-background: #fff8f0;
 
   --color-red: #c00000;
@@ -12,5 +22,5 @@
   --color-green: #4f6f52;
 
   --font-title: 'Baloo 2', sans-serif;
-  --font-main: 'Montserrat', sans-serif;
+  --font-main: 'PlanetEstyle', sans-serif;
 }
