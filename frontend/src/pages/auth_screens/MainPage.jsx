@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import './MainAuth.css'
-import tacoExpress from '../assets/tacosexpress.png'
+import tacoExpress from '../../assets/tacosexpress.png'
 
 function MainPage() {
     return (
