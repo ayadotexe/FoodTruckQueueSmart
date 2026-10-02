@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserDashboard.css";
+import "./notificationBanner";
 
 // mock data for the truck
 const MOCK_TRUCK = {
@@ -72,6 +73,9 @@ function UserDashboard() {
           </button>
           <button type="button" onClick={handleLeave} disabled={!inQueue}>
             Leave Queue
+          </button>
+          <button type="button" className="outline" onClick={() => navigate("/queue-history")}>
+            Queue History
           </button>
         </div>
       </section>

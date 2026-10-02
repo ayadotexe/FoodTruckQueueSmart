@@ -1,0 +1,205 @@
+/* Colors and fonts come from variables.css */
+
+.queue-history {
+  box-sizing: border-box;
+
+  max-width: 430px;
+  min-height: 100vh;
+
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+
+  background: var(--color-background);
+  color: var(--color-black);
+
+  font-family: var(--font-main);
+}
+
+/* ---------- Header ---------- */
+
+.queue-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-black);
+}
+
+.queue-history-header h1 {
+  margin: 0;
+
+  font-family: var(--font-title);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* ---------- Logout ---------- */
+
+.logout-button {
+  border: none;
+  border-radius: 8px;
+
+  padding: 7px 16px;
+
+  background: var(--color-red);
+  color: var(--color-white);
+
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+/* ---------- Statistics ---------- */
+
+.queue-history-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  margin-top: 24px;
+}
+
+.stat-card {
+  min-height: 90px;
+
+  padding: 14px;
+
+  border-radius: 9px;
+
+  background: #95BB47;
+  color: var(--color-white);
+}
+
+.stat-card h2 {
+  margin: 0;
+
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stat-card p {
+  margin: 14px 0 0;
+
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* ---------- Filters ---------- */
+
+.queue-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 16px;
+
+  overflow-x: auto;
+}
+
+.filter-button,
+.active-filter {
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 8px;
+
+  padding: 6px 10px;
+
+  background: var(--color-red);
+  color: var(--color-white);
+
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.active-filter {
+  background: #ff5555;
+}
+
+/* ---------- History ---------- */
+
+.history-table {
+  margin-top: 8px;
+
+  border-radius: 9px;
+  overflow: hidden;
+
+  background: #95BB47;
+  color: var(--color-white);
+}
+
+.history-header,
+.history-row {
+  display: grid;
+  grid-template-columns: 0.8fr 1.7fr 1fr;
+
+  column-gap: 10px;
+
+  align-items: center;
+}
+
+.history-header {
+  padding: 0 12px 8px;
+
+  background: var(--color-background);
+  color: var(--color-black);
+
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.history-row {
+  min-height: 34px;
+  padding: 0 12px;
+
+  font-size: 0.65rem;
+}
+
+.history-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+/* ---------- Pagination ---------- */
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 16px;
+}
+
+.pagination button {
+  border: none;
+  border-radius: 8px;
+
+  padding: 7px 14px;
+
+  background: #8fa23d;
+  color: var(--color-white);
+
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Larger screens ---------- */
+
+@media (min-width: 600px) {
+  .queue-history {
+    padding-top: 48px;
+  }
+}

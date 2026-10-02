@@ -7,6 +7,7 @@ import Signup from './pages/auth_screens/Signup'
 import UserDashboard from "./pages/user_screens/UserDashboard";
 import JoinQueue from "./pages/user_screens/JoinQueue";
 import QueueStatus from './pages/user_screens/QueueStatus'
+import QueueHistory from "./pages/user_screens/queueHistory"
 //admin
 import AdminDashboard from './pages/admin_screens/adminDashboard'
 // commenting out files that are currently empty
@@ -14,6 +15,7 @@ import AdminDashboard from './pages/admin_screens/adminDashboard'
 import ViewMenu from './pages/admin_screens/paths/viewMenu'
 import ViewQueue from './pages/admin_screens/paths/viewQueue'
 // import ViewStats from './pages/admin_screens/paths/viewStats'
+
 
 
 function App() {
@@ -27,6 +29,7 @@ function App() {
         <Route path="/user-dash" element={<UserDashboard />} />
         <Route path="/join-queue" element={<JoinQueue />} />
         <Route path="/queue-status" element={<QueueStatus />} />
+        <Route path="/queue-history" element={<QueueHistory />} />
 
         <Route path="/admin-dash" element={<AdminDashboard />} />
         {/* <Route path="/admin-history" element={<ViewHistory />} /> */}
