@@ -59,9 +59,15 @@ function QueueHistory() {
       <header className="queue-history-header">
         <h1>Queue History</h1>
 
-        <button className="logout-button" onClick={() => navigate("/")}>
-          Log Out
-        </button>
+        <div className="header-buttons">
+          <button type="button" className="qback-button" onClick={() => navigate("/user-dash")}>
+            ← Back
+          </button>
+
+          <button type="button" className="logout-button" onClick={() => navigate("/")}>
+            Log Out
+          </button>
+        </div>
       </header>
 
       {/* Statistics */}
