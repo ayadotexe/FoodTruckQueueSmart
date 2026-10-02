@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserDashboard.css";
-import "./notificationBanner";
+import NotificationBanner from "./notificationBanner";
 
 // mock data for the truck
 const MOCK_TRUCK = {
@@ -46,6 +46,9 @@ function UserDashboard() {
 
   return (
     <div className="dashboard">
+
+      {/*<NotificationBanner message="You're getting close to the front of the queue!" />*/}
+
       <header className="dashboard-header">
         <h1>Welcome back!</h1>
         <p className="truck-wait">
