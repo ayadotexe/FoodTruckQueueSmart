@@ -1,0 +1,248 @@
+/* Colors and fonts come from variables.css. Do not redefine :root here. */
+
+/* Values only this screen needs */
+.queue-status {
+  --disabled-bg: #e6e0d8;
+  --disabled-text: #9a9288;
+  --radius: 22px;
+}
+
+/* ---------- Page layout (mobile first) ---------- */
+.queue-status {
+  box-sizing: border-box;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 24px 48px;
+  background: var(--color-background);
+  color: var(--color-black);
+  font-family: var(--font-main);
+  text-align: center;
+}
+
+.queue-status .status-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.queue-status h1 {
+  align-self: center;
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 2.4rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+/* ---------- Status card ---------- */
+.queue-status .status-card {
+  padding: 28px 20px;
+  border: 2px solid var(--color-tan);
+  border-radius: 20px;
+  background: var(--color-white);
+}
+
+.queue-status .label {
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.8rem;
+  text-transform: uppercase;
+}
+
+.queue-status .position {
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 5rem;
+  line-height: 1.1;
+  color: var(--color-red);
+}
+
+.queue-status .headline {
+  margin: 8px 0 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 2.2rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.queue-status .headline.ready {
+  color: var(--color-red);
+}
+
+.queue-status .wait {
+  margin: 16px 0 0;
+  font-size: 0.95rem;
+}
+
+.queue-status .wait strong {
+  color: var(--color-red);
+}
+
+/* ---------- Progress stages ---------- */
+.queue-status .stages {
+  display: flex;
+  justify-content: space-between;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.queue-status .stages li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--disabled-text);
+}
+
+.queue-status .dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--color-tan);
+  background: var(--color-white);
+}
+
+.queue-status .stages li.done .dot {
+  background: var(--color-green);
+  border-color: var(--color-green);
+}
+
+.queue-status .stages li.current .dot {
+  background: var(--color-red);
+  border-color: var(--color-red);
+}
+
+.queue-status .stages li.done,
+.queue-status .stages li.current {
+  color: var(--color-black);
+  font-weight: 600;
+}
+
+/* ---------- Queue information ---------- */
+.queue-status .queue-info {
+  margin-top: 28px;
+  text-align: left;
+}
+
+.queue-status .queue-info h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.3rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.queue-status .queue-info dl {
+  margin: 0;
+}
+
+.queue-status .queue-info dl div {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--color-tan);
+}
+
+.queue-status .queue-info dl div:last-child {
+  border-bottom: none;
+}
+
+.queue-status .queue-info dt {
+  font-size: 0.95rem;
+}
+
+.queue-status .queue-info dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ---------- Buttons ---------- */
+.queue-status .status-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.queue-status button {
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-red);
+  color: var(--color-white);
+  font-family: var(--font-main);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+
+/* button inside the "not in a queue" card */
+.queue-status .status-card button {
+  margin-top: 20px;
+}
+
+.queue-status button:hover:not(:disabled) {
+  background: var(--color-red-hover);
+}
+
+.queue-status button:focus-visible {
+  outline: 3px solid var(--color-black);
+  outline-offset: 3px;
+}
+
+.queue-status button:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+.queue-status .outline {
+  background: transparent;
+  color: var(--color-red);
+  border: 2px solid var(--color-red);
+}
+
+.queue-status .outline:hover:not(:disabled) {
+  background: var(--color-cream);
+}
+
+.queue-status .back-button {
+  width: auto;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+
+/* ---------- Demo button (delete with the demo code) ---------- */
+.queue-status .demo-controls {
+  margin-top: 40px;
+}
+
+.queue-status .demo {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--color-black);
+  border: 2px dashed var(--color-tan);
+}
+
+/* ---------- Larger screens ---------- */
+@media (min-width: 600px) {
+  .queue-status {
+    padding-top: 48px;
+  }
+}

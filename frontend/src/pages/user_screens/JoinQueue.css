@@ -1,13 +1,11 @@
 /* Colors and fonts come from variables.css. Do not redefine :root here. */
 
-/* Values only this screen needs */
 .join-queue {
   --disabled-bg: #e6e0d8;
   --disabled-text: #9a9288;
   --radius: 22px;
 }
 
-/* ---------- Page layout (mobile first) ---------- */
 .join-queue {
   box-sizing: border-box;
   max-width: 430px;
@@ -20,12 +18,12 @@
   text-align: center;
 }
 
-.join-header {
+.join-queue .join-header {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .join-queue h1 {
@@ -38,78 +36,105 @@
   text-transform: uppercase;
 }
 
-/* ---------- Service list ---------- */
-.service-list {
-  margin: 0;
-  padding: 0;
-  border: none;
-  min-width: 0;
-  text-align: left;
-}
-
-.service-list legend {
-  width: 100%;
-  margin-bottom: 14px;
-  padding: 0;
+.join-queue h2 {
+  margin: 0 0 12px;
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 1.3rem;
-  text-align: center;
   text-transform: uppercase;
 }
 
-.service-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  padding: 14px 16px;
+/* ---------- Confirmation card (after placing) ---------- */
+.join-queue .confirm-card {
+  margin-bottom: 32px;
+  padding: 24px 20px;
   border: 2px solid var(--color-tan);
-  border-radius: 14px;
+  border-radius: 20px;
   background: var(--color-white);
-  cursor: pointer;
 }
 
-.service-option:hover {
-  border-color: var(--color-red);
-}
-
-/* the chosen row (class added by the JSX) */
-.service-option.selected {
-  border-color: var(--color-red);
-  background: var(--color-cream);
-}
-
-.service-option input[type="radio"] {
-  width: 20px;
-  height: 20px;
+.join-queue .label {
   margin: 0;
-  accent-color: var(--color-red);
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-transform: uppercase;
 }
 
-.service-name {
-  flex: 1;
-  font-weight: 600;
-  font-size: 1.05rem;
+.join-queue .position {
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 4.5rem;
+  line-height: 1.1;
+  color: var(--color-red);
 }
 
-.service-meta {
+.join-queue .wait {
+  margin: 14px 0 0;
+  font-size: 0.95rem;
+}
+
+.join-queue .wait strong {
+  color: var(--color-red);
+}
+
+/* ---------- Order list ---------- */
+.join-queue .order-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.join-queue .order-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--color-tan);
+}
+
+.join-queue .item-info,
+.join-queue .item-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.join-queue .item-side {
+  align-items: flex-end;
+}
+
+.join-queue .item-name {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.join-queue .item-detail {
   font-size: 0.85rem;
-  color: var(--color-green);
 }
 
-/* locked after joining a queue */
-.service-list:disabled .service-option {
-  opacity: 0.6;
-  cursor: not-allowed;
+.join-queue .item-price {
+  font-weight: 600;
 }
 
-.service-list:disabled .service-option:hover {
-  border-color: var(--color-tan);
+.join-queue .empty {
+  margin: 8px 0 0;
+  color: var(--disabled-text);
 }
 
-.service-list:disabled .service-option.selected {
-  border-color: var(--color-red);
+.join-queue .total {
+  margin: 16px 0 20px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+}
+
+.join-queue .total strong {
+  color: var(--color-red);
 }
 
 /* ---------- Messages ---------- */
@@ -120,18 +145,8 @@
   font-size: 0.95rem;
 }
 
-.join-queue .wait {
-  margin: 20px 0 0;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-.join-queue .wait strong {
-  color: var(--color-red);
-}
-
 /* ---------- Buttons ---------- */
-.join-buttons {
+.join-queue .join-buttons {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -157,8 +172,7 @@
   background: var(--color-red-hover);
 }
 
-.join-queue button:focus-visible,
-.service-option:focus-within {
+.join-queue button:focus-visible {
   outline: 3px solid var(--color-black);
   outline-offset: 3px;
 }
@@ -169,24 +183,38 @@
   cursor: not-allowed;
 }
 
-/* "view queue status" */
-.join-queue .secondary {
-  margin-top: 14px;
-  background: var(--color-black);
+.join-queue .outline {
+  background: transparent;
+  color: var(--color-red);
+  border: 2px solid var(--color-red);
 }
 
-.join-queue .secondary:hover:not(:disabled) {
-  background: #2a2a2a;
+.join-queue .outline:hover:not(:disabled) {
+  background: var(--color-cream);
 }
 
-/* small back button in the top-left */
 .join-queue .back-button {
   width: auto;
   padding: 10px 18px;
   font-size: 0.95rem;
 }
 
-/* ---------- Larger screens ---------- */
+/* small text button next to each item */
+.join-queue .link-button {
+  width: auto;
+  padding: 2px 0;
+  background: none;
+  color: var(--color-red);
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  text-decoration: underline;
+}
+
+.join-queue .link-button:hover:not(:disabled) {
+  background: none;
+  color: var(--color-red-hover);
+}
+
 @media (min-width: 600px) {
   .join-queue {
     padding-top: 48px;

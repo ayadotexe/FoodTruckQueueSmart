@@ -1,12 +1,12 @@
-/* Colors and fonts come from variables.css (shared by the whole team).*/
- 
+/* Colors and fonts come from variables.css (shared by the whole team). */
+
 /* Values only this screen needs */
 .dashboard {
   --disabled-bg: #e6e0d8;
   --disabled-text: #9a9288;
   --radius: 22px;
 }
- 
+
 /* ---------- Page layout (mobile first) ---------- */
 .dashboard {
   box-sizing: border-box;
@@ -19,7 +19,7 @@
   font-family: var(--font-main);
   text-align: center;
 }
- 
+
 .dashboard h1,
 .dashboard h2 {
   margin: 0;
@@ -27,29 +27,34 @@
   font-weight: 700;
   text-transform: uppercase;
 }
- 
+
 .dashboard h1 {
   font-size: 2.6rem;
   line-height: 1.05;
 }
- 
+
 .dashboard h2 {
   font-size: 1.4rem;
   margin-bottom: 12px;
 }
- 
+
 .dashboard section {
   margin-top: 40px;
 }
- 
-.dashboard-header p {
-  margin: 8px 0 0;
-  font-size: 1rem;
+
+/* wait time under the welcome heading */
+.dashboard .truck-wait {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
   letter-spacing: 0.03em;
 }
- 
+
+.dashboard .truck-wait strong {
+  color: var(--color-red);
+}
+
 /* ---------- Queue card ---------- */
-.queue-card [role="status"] {
+.dashboard .queue-card [role="status"] {
   margin: 16px 0 8px;
   font-family: var(--font-title);
   font-weight: 700;
@@ -57,23 +62,23 @@
   line-height: 1.15;
   text-transform: uppercase;
 }
- 
-.queue-card p {
+
+.dashboard .queue-card p {
   margin: 4px 0;
   font-size: 0.95rem;
 }
- 
-.queue-card strong {
+
+.dashboard .queue-card strong {
   color: var(--color-red);
 }
- 
-.queue-buttons {
+
+.dashboard .queue-buttons {
   display: flex;
   flex-direction: column;
   gap: 14px;
   margin-top: 28px;
 }
- 
+
 /* ---------- Buttons ---------- */
 .dashboard button {
   width: 100%;
@@ -89,67 +94,102 @@
   text-transform: lowercase;
   cursor: pointer;
 }
- 
+
 /* secondary buttons (View Menu, See all) use black */
 .dashboard section:not(.queue-card) > button {
   margin-top: 16px;
   background: var(--color-black);
 }
- 
+
 .dashboard button:hover:not(:disabled) {
   background: var(--color-red-hover);
 }
- 
+
 .dashboard section:not(.queue-card) > button:hover:not(:disabled) {
   background: #2a2a2a;
 }
- 
+
 .dashboard button:focus-visible {
   outline: 3px solid var(--color-black);
   outline-offset: 3px;
 }
- 
+
 /* disabled = grey, same as the mockups */
 .dashboard button:disabled {
   background: var(--disabled-bg);
   color: var(--disabled-text);
   cursor: not-allowed;
 }
- 
+
+/* outlined "view order" button */
+.dashboard .outline {
+  background: transparent;
+  color: var(--color-red);
+  border: 2px solid var(--color-red);
+}
+
+.dashboard .outline:hover:not(:disabled) {
+  background: var(--color-cream);
+}
+
 /* ---------- Active services ---------- */
-.services {
+.dashboard .ordering-status {
+  margin: 0 0 8px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.dashboard .ordering-status .available {
+  color: var(--color-green);
+}
+
+.dashboard .ordering-status .unavailable {
+  color: var(--color-red);
+}
+
+.dashboard .services {
   margin: 0;
   padding: 0;
   list-style: none;
   text-align: left;
 }
- 
-.services li {
+
+.dashboard .services li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
   padding: 14px 4px;
   border-bottom: 1px solid var(--color-tan);
   font-size: 1rem;
 }
- 
-.services li:last-child {
+
+.dashboard .services li:last-child {
   border-bottom: none;
 }
- 
+
+/* value on the right */
+.dashboard .services li span:last-child {
+  font-weight: 600;
+  text-align: right;
+}
+
 /* ---------- Notifications ---------- */
-.notifications ul {
+.dashboard .notifications ul {
   margin: 0;
   padding: 0;
   list-style: none;
   text-align: left;
 }
- 
-.notification {
+
+.dashboard .notification {
   margin-bottom: 10px;
   padding: 12px 14px;
   border-left: 4px solid var(--color-red);
   background: var(--color-cream);
   font-size: 0.95rem;
 }
- 
+
 /* ---------- Larger screens ---------- */
 @media (min-width: 600px) {
   .dashboard {
