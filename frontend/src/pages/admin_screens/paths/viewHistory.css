@@ -1,0 +1,79 @@
+
+.view-history-page {
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+.view-history-page h1 {
+  font-size: 3.5rem;
+  margin-bottom: 50px;
+  font-family: var(--font-main);
+  text-align: center;
+}
+
+/* ---------- history list ---------- */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+.date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.date-heading {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #000;
+  border-bottom: 2px solid #000;
+  padding-bottom: 5px;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+}
+
+.history-item .user-name {
+  font-size: 1.8rem;
+  font-weight: 500;
+  font-family: var(--font-main);
+}
+
+/* ---------- status labels ---------- */
+.status-label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.status-label.done {
+  color: #000;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.status-label.removed {
+  color: var(--color-red, #b30000);
+}

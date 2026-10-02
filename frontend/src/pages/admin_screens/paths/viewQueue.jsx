@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import userIcon from "../../../assets/icon.png";
 import "./ViewQueue.css";
@@ -13,9 +13,22 @@ function ViewQueue() {
         { id: 3, name: "user 3" },
     ]);
 
-    // remove user
+    // drag
+    const dragItem = useRef(null);
+    const dragOverItem = useRef(null);
+
     const handleRemove = (id) => {
         setQueue(queue.filter(user => user.id !== id));
+    };
+
+    const handleSort = () => {
+        let _queue = [...queue];
+        const draggedItemContent = _queue.splice(dragItem.current, 1)[0];
+        _queue.splice(dragOverItem.current, 0, draggedItemContent);
+
+        dragItem.current = null;
+        dragOverItem.current = null;
+        setQueue(_queue);
     };
 
     return (
@@ -33,11 +46,26 @@ function ViewQueue() {
 
             {/* queue */}
             <div className="queue-list">
-                {queue.map(user => (
-                    <div key={user.id} className="queue-item">
+                {queue.map((user, index) => (
+                    <div 
+                        key={user.id} 
+                        className="queue-item"
+                        draggable
+                        onDragStart={() => (dragItem.current = index)}
+                        onDragEnter={() => (dragOverItem.current = index)}
+                        onDragEnd={handleSort}
+                        onDragOver={(e) => e.preventDefault()}
+                    >
+                        <span className="drag-handle" title="Drag to reorder">⋮⋮</span>
+                        
                         <span className="user-name">{user.name}</span>
+                        
                         <div className="queue-actions">
-                            <span className="action-link">view order</span>
+                            <span 
+                                className="action-link" 
+                                onClick={() => navigate('/admin-order')}>
+                                view order
+                            </span>
                             <span 
                                 className="action-link remove" 
                                 onClick={() => handleRemove(user.id)}>

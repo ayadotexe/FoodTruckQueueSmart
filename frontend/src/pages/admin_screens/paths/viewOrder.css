@@ -1,0 +1,109 @@
+
+.view-order-page {
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+}
+
+.order-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+.view-order-page h1 {
+  font-size: 3.5rem;
+  margin-bottom: 50px;
+  font-family: var(--font-main);
+}
+
+/* ---------- order items ---------- */
+.order-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 60px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.placeholder-image {
+  width: 80px;
+  height: 80px;
+  background-color: #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: #000;
+  font-weight: 500;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.item-details h2 {
+  font-size: 1.8rem;
+  margin: 0 0 5px 0;
+  font-weight: 500;
+  font-family: var(--font-main);
+}
+
+.item-details p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.dotted-label {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  color: #000;
+}
+
+.red-text {
+  color: var(--color-red, #b30000);
+}
+
+/* ---------- total ---------- */
+.order-total {
+  font-size: 2.2rem;
+  font-weight: 500;
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+  margin-bottom: 60px;
+}
+
+.notify-button {
+  background-color: var(--color-red, #b30000);
+  color: #ffffff;
+  border: none;
+  border-radius: 25px;
+  padding: 15px 40px;
+  font-size: 1.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  max-width: 350px;
+}
+
+.notify-button:hover {
+  opacity: 0.9;
+}

@@ -16,19 +16,19 @@ function AdminDashboard() {
             <h1>Let's get started.</h1>
 
             <section className="buttons">
-                <Link to="/paths/viewQueue">
+                <Link to="/admin-queue">
                     <button>view/edit queue</button>
                 </Link>
 
-                <Link to="/paths/viewMenu">
+                <Link to="/admin-menu">
                     <button>view/edit menu</button>
                 </Link>
 
-                <Link to="/paths/viewStats">
+                <Link to="/admin-stats">
                     <button>usage statistics</button>
                 </Link>
 
-                <Link to="/paths/viewHistory">
+                <Link to="/admin-history">
                     <button>view queue history</button>
                 </Link>
             </section>
