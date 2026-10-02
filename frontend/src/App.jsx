@@ -3,9 +3,12 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import MainPage from './pages/auth_screens/MainPage'
 import Login from './pages/auth_screens/Login'
 import Signup from './pages/auth_screens/Signup'
-import UserDashboard from './pages/user_screens/UserDashboard'
-import JoinQueue from './pages/user_screens/JoinQueue'
+// user
+import UserDashboard from "./pages/user_screens/UserDashboard";
+import JoinQueue from "./pages/user_screens/JoinQueue";
 import QueueStatus from './pages/user_screens/QueueStatus'
+//admin
+import AdminDashboard from './pages/admin_screens/adminDashboard'
 
 function App() {
   return (
@@ -14,9 +17,12 @@ function App() {
         <Route path="/" element={<MainPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/join" element={<JoinQueue />} />
+
+        <Route path="/user-dash" element={<UserDashboard />} />
+        <Route path="/join-queue" element={<JoinQueue />} />
         <Route path="/queue-status" element={<QueueStatus />} />
+
+        <Route path="/admin-dash" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   )
