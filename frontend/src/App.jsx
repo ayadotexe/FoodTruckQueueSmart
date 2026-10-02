@@ -14,7 +14,7 @@ import ViewHistory from './pages/admin_screens/paths/viewHistory'
 import ViewMenu from './pages/admin_screens/paths/viewMenu'
 import ViewQueue from './pages/admin_screens/paths/viewQueue'
 import ViewOrder from './pages/admin_screens/paths/viewOrder'
-// import ViewStats from './pages/admin_screens/paths/viewStats'
+import ViewStats from './pages/admin_screens/paths/viewStats'
 
 
 
@@ -36,7 +36,7 @@ function App() {
         <Route path="/admin-menu" element={<ViewMenu />} />
         <Route path="/admin-queue" element={<ViewQueue />} />
         <Route path="/admin-order" element={<ViewOrder />} />
-        {/* <Route path="/admin-stats" element={<ViewStats />} /> */}
+        <Route path="/admin-stats" element={<ViewStats />} />
 
       </Routes>
     </BrowserRouter>

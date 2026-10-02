@@ -6,7 +6,7 @@ import "./ViewQueue.css";
 function ViewQueue() {
     const navigate = useNavigate();
 
-    // queue simulation
+    // simulated queue
     const [queue, setQueue] = useState([
         { id: 1, name: "user 1" },
         { id: 2, name: "user 2" },
@@ -44,7 +44,6 @@ function ViewQueue() {
 
             <h1>CURRENT QUEUE</h1>
 
-            {/* queue */}
             <div className="queue-list">
                 {queue.map((user, index) => (
                     <div 
@@ -56,9 +55,10 @@ function ViewQueue() {
                         onDragEnd={handleSort}
                         onDragOver={(e) => e.preventDefault()}
                     >
-                        <span className="drag-handle" title="Drag to reorder">⋮⋮</span>
-                        
-                        <span className="user-name">{user.name}</span>
+                        <div className="user-info">
+                            <span className="drag-handle" title="Drag to reorder">⋮⋮</span>
+                            <span className="user-name">{user.name}</span>
+                        </div>
                         
                         <div className="queue-actions">
                             <span 
