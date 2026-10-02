@@ -34,7 +34,7 @@
 .dashboard h1,
 .dashboard h2 {
   margin: 0;
-  font-family: var(--font-title);
+  font-family: var(--font-main);
   font-weight: 400;
   text-transform: uppercase;
 }
@@ -101,4 +101,23 @@
   .dashboard {
     padding-top: 56px;
   }
+}
+
+.dashboard button.toggle-btn {
+  width: auto;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  letter-spacing: normal;
+  border-radius: 8px;
+}
+
+.dashboard button.toggle-btn.closed {
+  background: var(--color-black, #333);
+}
+
+.profile-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
 }
