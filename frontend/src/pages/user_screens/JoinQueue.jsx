@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./JoinQueue.css";
+import { CURRENT_USER_ID } from "../../currentUser";
 
 // mock order (matches the View Order mockup)
-// ordersAhead = people ahead of you who ordered this item
 // prepMinutes = how long one order of this item takes to make
+// (ordersAhead is no longer used; the backend works out the wait)
 const MOCK_ORDER = [
   {
     id: 1,
@@ -26,8 +27,6 @@ const MOCK_ORDER = [
   },
 ];
 
-const POSITION_AFTER_JOIN = 3; // mock: 2 people ahead, so you're 3rd
-
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
@@ -39,13 +38,9 @@ function JoinQueue() {
 
   const [items, setItems] = useState(MOCK_ORDER);
   const [placed, setPlaced] = useState(false); // true = order placed, in the queue
+  const [queueInfo, setQueueInfo] = useState(null); // backend response: position + estimated wait
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // estimated wait: for each item, people ahead who ordered it x how long it takes
-  const estimatedWait = items.reduce(
-    (sum, i) => sum + i.ordersAhead * i.prepMinutes,
-    0
-  );
 
   const total = items
     .reduce((sum, i) => sum + i.price * i.quantity, 0)
@@ -57,16 +52,62 @@ function JoinQueue() {
   };
 
   // validation: you can't join the queue with an empty order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (items.length === 0) {
       setError("Add at least one item before placing your order.");
       return;
     }
     setError("");
-    setPlaced(true); // replace with an API call later
+    setLoading(true);
+    try {
+      const res = await fetch("/api/queue/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: CURRENT_USER_ID,
+          items: items.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            prepMinutes: Math.max(1, i.prepMinutes), // backend requires at least 1
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not join the queue.");
+        return;
+      }
+      setQueueInfo(data);
+      setPlaced(true);
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLeave = () => setPlaced(false);
+  const handleLeave = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/queue/leave/${encodeURIComponent(CURRENT_USER_ID)}`,
+        { method: "DELETE" }
+      );
+      // 404 means we're already not in the queue, so just reset the screen
+      if (!res.ok && res.status !== 404) {
+        const data = await res.json();
+        setError(data.error || "Could not leave the queue.");
+        return;
+      }
+      setPlaced(false);
+      setQueueInfo(null);
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="join-queue">
@@ -78,13 +119,14 @@ function JoinQueue() {
       </header>
 
       {/* after the order is placed */}
-      {placed && (
+      {placed && queueInfo && (
         <section className="confirm-card" aria-live="polite">
           <p className="label">You are</p>
-          <p className="position">{ordinal(POSITION_AFTER_JOIN)}</p>
+          <p className="position">{ordinal(queueInfo.position)}</p>
           <p className="label">in line</p>
           <p className="wait">
-            Estimated wait time: <strong>{estimatedWait} minutes</strong>
+            Estimated wait time:{" "}
+            <strong>{queueInfo.estimatedWaitMinutes} minutes</strong>
           </p>
         </section>
       )}
@@ -150,8 +192,8 @@ function JoinQueue() {
       {/* buttons at the bottom */}
       <div className="join-buttons">
         {!placed && (
-          <button type="button" onClick={handlePlaceOrder}>
-            Place order &amp; join queue
+          <button type="button" onClick={handlePlaceOrder} disabled={loading}>
+            {loading ? "Placing order..." : "Place order & join queue"}
           </button>
         )}
 
@@ -160,7 +202,12 @@ function JoinQueue() {
             <button type="button" onClick={() => navigate("/queue-status")}>
               View queue status
             </button>
-            <button type="button" className="outline" onClick={handleLeave}>
+            <button
+              type="button"
+              className="outline"
+              onClick={handleLeave}
+              disabled={loading}
+            >
               Leave queue
             </button>
           </>
