@@ -1,25 +1,68 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './MainAuth.css'
 
 function Signup() {
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [error, setError] = useState('')
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
 
-    const handleSubmit = (event) => {
-        event.preventDefault()
+    // const handleSubmit = (event) => {
+    //     event.preventDefault()
 
-        if (password !== confirmPassword) {
-            setError('Passwords do not match.')
+    //     if (password !== confirmPassword) {
+    //         setError('Passwords do not match.')
+    //         return
+    //     }
+
+    //     setError('')
+    //     setPassword('')
+    //     setConfirmPassword('')
+    //     event.target.reset()
+    // }
+
+    const handleSubmit = async (event) => {
+    event.preventDefault()
+    setError('')
+
+    if (password !== confirmPassword) {
+        setError('Passwords do not match.')
+        return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    setLoading(true)
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                password,
+            }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            setError(data.error || 'Unable to create your account.')
             return
         }
 
-        setError('')
-        setPassword('')
-        setConfirmPassword('')
-        event.target.reset()
+        navigate('/login', {
+            state: { message: 'Account created! Please log in.' },
+        })
+    } catch {
+        setError('Could not reach the server. Please try again.')
+    } finally {
+        setLoading(false)
     }
+}
 
     return (
         <div className="auth-page">
@@ -96,8 +139,12 @@ function Signup() {
 
                     {error && <p className="auth-subtitle">{error}</p>}
 
-                    <button type="submit" className="auth-button">
+                    {/* <button type="submit" className="auth-button">
                         Sign up
+                    </button> */}
+
+                    <button type="submit" className="auth-button" disabled={loading}>
+                        {loading ? 'Creating account...' : 'Sign up'}
                     </button>
                 </form>
 
