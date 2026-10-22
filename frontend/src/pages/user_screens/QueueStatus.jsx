@@ -1,24 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./QueueStatus.css";
-
-// mock order (same as the Place Order page)
-// ordersAhead = people ahead of you who ordered this item
-// prepMinutes = how long one order of this item takes to make
-const MOCK_ORDER = [
-  { id: 1, name: "Tacos al pastor", quantity: 5, ordersAhead: 2, prepMinutes: 3 },
-  { id: 2, name: "Bottled coke", quantity: 1, ordersAhead: 0, prepMinutes: 0 },
-];
+import { CURRENT_USER_ID } from "../../currentUser";
 
 const PICKUP_LOCATION = "Lot B, near the library"; // mock
-
-const START_POSITION = 3; // position when the order was placed
 
 const STAGES = [
   { key: "waiting", label: "Waiting" },
   { key: "almost", label: "Almost ready" },
   { key: "served", label: "Served" },
 ];
+
+const POLL_MS = 5000; // refresh from the backend every 5 seconds
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -28,44 +21,87 @@ const ordinal = (n) => {
 
 function QueueStatus() {
   const navigate = useNavigate();
-  const [position, setPosition] = useState(START_POSITION); // null = not in a queue
-  const [ready, setReady] = useState(false); // true = ready for pickup
+  const [status, setStatus] = useState(null); // backend entry while waiting, else null
+  const [ready, setReady] = useState(false); // true = served, ready for pickup
+  const [servedItems, setServedItems] = useState([]); // items of the served order
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const inQueue = position !== null;
+  const loadStatus = useCallback(async () => {
+    try {
+      const userId = encodeURIComponent(CURRENT_USER_ID);
+      const res = await fetch(`/api/queue/status/${userId}`);
+
+      if (res.ok) {
+        // still waiting in the queue
+        setStatus(await res.json());
+        setReady(false);
+        setError("");
+        return;
+      }
+
+      if (res.status === 404) {
+        // not waiting: check history to see if the order was served
+        setStatus(null);
+        const histRes = await fetch(`/api/queue/history/${userId}`);
+        const history = histRes.ok ? await histRes.json() : [];
+        const latest = history[history.length - 1];
+        if (latest && latest.status === "served") {
+          setReady(true);
+          setServedItems(latest.items);
+        } else {
+          setReady(false);
+        }
+        setError("");
+        return;
+      }
+
+      const data = await res.json();
+      setError(data.error || "Could not load your queue status.");
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // load once, then keep refreshing so the position updates on its own
+  useEffect(() => {
+    loadStatus();
+    const timer = setInterval(loadStatus, POLL_MS);
+    return () => clearInterval(timer);
+  }, [loadStatus]);
+
+  const inQueue = status !== null || ready;
+  const position = status ? status.position : null;
 
   // which of the three stages we're in
   let stage = null;
   if (ready) stage = "served";
   else if (position === 1) stage = "almost";
-  else if (inQueue) stage = "waiting";
+  else if (status) stage = "waiting";
 
   const currentIndex = STAGES.findIndex((s) => s.key === stage);
 
-  // how many people have been served since the order was placed
-  const servedSoFar = inQueue ? START_POSITION - position : 0;
+  const orderItems = status ? status.items : servedItems;
+  const itemCount = orderItems.reduce((sum, i) => sum + i.quantity, 0);
 
-  // estimated wait: for each item, people still ahead who ordered it x prep time
-  const estimatedWait = MOCK_ORDER.reduce((sum, i) => {
-    const stillAhead = Math.max(0, i.ordersAhead - servedSoFar);
-    return sum + stillAhead * i.prepMinutes;
-  }, 0);
-
-  const itemCount = MOCK_ORDER.reduce((sum, i) => sum + i.quantity, 0);
-
-  const handleLeave = () => {
-    setPosition(null);
-    setReady(false);
-  };
-
-  // DEMO ONLY: steps through the states so you can screenshot each one.
-  // Delete this function and the demo-controls div before the final version.
-  const handleAdvance = () => {
-    if (!inQueue) setPosition(START_POSITION);
-    else if (ready) {
-      setPosition(START_POSITION);
-      setReady(false);
-    } else if (position > 1) setPosition(position - 1);
-    else setReady(true);
+  const handleLeave = async () => {
+    setError("");
+    try {
+      const res = await fetch(
+        `/api/queue/leave/${encodeURIComponent(CURRENT_USER_ID)}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok && res.status !== 404) {
+        const data = await res.json();
+        setError(data.error || "Could not leave the queue.");
+        return;
+      }
+      await loadStatus();
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    }
   };
 
   return (
@@ -77,8 +113,16 @@ function QueueStatus() {
         <h1>Queue status</h1>
       </header>
 
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {loading && <p role="status">Loading...</p>}
+
       {/* not in a queue */}
-      {!inQueue && (
+      {!loading && !inQueue && (
         <section className="status-card">
           <p className="headline" role="status">Not currently in a queue</p>
           <button type="button" onClick={() => navigate("/menu")}>
@@ -87,7 +131,7 @@ function QueueStatus() {
         </section>
       )}
 
-      {inQueue && (
+      {!loading && inQueue && (
         <>
           {/* position, wait time, and current status */}
           <section className="status-card" aria-live="polite">
@@ -110,7 +154,8 @@ function QueueStatus() {
 
             {stage !== "served" && (
               <p className="wait">
-                Estimated wait time: <strong>{estimatedWait} minutes</strong>
+                Estimated wait time:{" "}
+                <strong>{status.estimatedWaitMinutes} minutes</strong>
               </p>
             )}
           </section>
@@ -154,13 +199,6 @@ function QueueStatus() {
           </div>
         </>
       )}
-
-      {/* DEMO ONLY: delete before final */}
-      <div className="demo-controls">
-        <button type="button" className="demo" onClick={handleAdvance}>
-          demo: next state
-        </button>
-      </div>
     </div>
   );
 }
