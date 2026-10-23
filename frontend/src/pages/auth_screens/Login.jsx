@@ -33,6 +33,8 @@ function Login() {
             return
         }
 
+        sessionStorage.setItem('currentUser', JSON.stringify(data.user))
+        
         navigate(
             data.user.role === 'admin' ? '/admin-dash' : '/user-dash'
         )
