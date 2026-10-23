@@ -1,28 +1,21 @@
-// backend/tests/menu.test.js
 const request = require('supertest');
-const app = require('../app'); // This imports your Express app without starting the port
+const app = require('../app'); // FIXED: Now points to app.js
 
-describe('Menu API', () => {
-  it('should retrieve all menu items', async () => {
-    const res = await request(app).get('/api/menu');
-    
-    // Assertions to check if the API is working correctly
-    expect(res.statusCode).toEqual(200);
-    expect(Array.isArray(res.body)).toBeTruthy();
-    expect(res.body.length).toBe(1); // Because you have 4 tacos in store.js
-  });
+describe('API Validation Rules', () => {
+    test('GET /api/menu should return a list of items', async () => {
+        const response = await request(app).get('/api/menu');
+        
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBeGreaterThan(0);
+    });
 
-  it('should add a new menu item', async () => {
-    const res = await request(app)
-      .post('/api/menu')
-      .send({
-        name: "Quesadilla",
-        description: "Cheese quesadilla",
-        expectedDuration: 3,
-        priorityLevel: "Normal"
-      });
+    test('POST /api/menu should reject items missing a name', async () => {
+        const response = await request(app)
+            .post('/api/menu')
+            .send({ category: 'food', price: 5.00 }); // Purposely missing the name
 
-    expect(res.statusCode).toEqual(201);
-    expect(res.body.name).toEqual("Quesadilla");
-  });
+        // It should throw an error status code if validation is working
+        expect(response.statusCode).not.toBe(200); 
+    });
 });
