@@ -12,11 +12,6 @@ const MOCK_TRUCK = {
   nowServing: 42,
 };
 
-const MOCK_NOTIFICATIONS = [
-  "Your order is being prepared.",
-  "You are getting close to the front of the queue!",
-];
-
 const POLL_MS = 5000; // refresh from the backend every 5 seconds
 
 const ordinal = (n) => {
@@ -32,6 +27,7 @@ function UserDashboard() {
   const [myStatus, setMyStatus] = useState(null); // backend entry while waiting, else null
   const [served, setServed] = useState(false); // true = order is ready
   const [error, setError] = useState("");
+  const [notifications, setNotifications] = useState([]);
 
   const loadData = useCallback(async () => {
     try {
@@ -41,6 +37,14 @@ function UserDashboard() {
       const sumRes = await fetch("/api/queue/summary");
       if (sumRes.ok) setSummary(await sumRes.json());
 
+      const notifRes = await fetch(
+        `/api/queue/notifications/${userId}`
+      );
+
+      if (notifRes.ok) {
+        setNotifications(await notifRes.json());
+      }
+      
       // this user's own status
       const res = await fetch(`/api/queue/status/${userId}`);
       if (res.ok) {
@@ -54,6 +58,7 @@ function UserDashboard() {
         const latest = history[history.length - 1];
         setServed(Boolean(latest && latest.status === "served"));
       }
+      
       setError("");
     } catch {
       setError("Could not reach the server. Is the backend running?");
@@ -173,17 +178,25 @@ function UserDashboard() {
         </button>
       </section>
 
+      
       <section className="notifications" aria-labelledby="notif-heading">
         <h2 id="notif-heading">Notifications</h2>
         <ul>
-          {MOCK_NOTIFICATIONS.slice(0, 2).map((n, i) => (
-            <li key={i} className="notification">{n}</li>
-          ))}
+          {notifications.length > 0 ? (
+            notifications.slice(-5).reverse().map((n) => (
+              <li key={n.id} className="notification">
+                {n.message}
+              </li>
+            ))
+          ) : (
+            <li className="notification">No notifications yet.</li>
+          )}
         </ul>
         <button type="button" onClick={() => navigate("/notifications")}>
           See all
         </button>
       </section>
+
     </div>
   );
 }
