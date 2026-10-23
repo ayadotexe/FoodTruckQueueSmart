@@ -208,6 +208,62 @@
   cursor: not-allowed;
 }
 
+
+/* Calendar date filter */
+.date-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(320px, 100%);
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: var(--color-background, #fff);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.date-filter-panel h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.date-filter-panel label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.date-filter-panel input[type="date"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.date-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.date-filter-actions button {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.date-filter-actions button:last-child {
+  background: var(--color-red, #631e12);
+  color: white;
+  border-color: transparent;
+}
+
+
 /* ---------- Larger screens ---------- */
 
 @media (min-width: 600px) {

@@ -22,8 +22,8 @@ router.post("/join", controller.joinQueue);
 router.delete("/leave/:userId", controller.leaveQueue);
 router.get("/status/:userId", controller.getStatus);
 router.get("/history/:userId", controller.getHistory);
+router.get("/notifications/:userId",controller.getNotifications);
 router.get("/summary", controller.getSummary);
-
 router.get("/", requireAdmin, controller.getQueue);
 router.post("/serve-next", requireAdmin, controller.serveNext);
 
