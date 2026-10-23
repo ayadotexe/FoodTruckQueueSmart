@@ -26,6 +26,10 @@ function getQueue(req, res) {
   res.status(200).json(queue.getQueue());
 }
 
+function getSummary(req, res) {
+  res.status(200).json(queue.getSummary());
+}
+
 function serveNext(req, res) {
   res.status(200).json(queue.serveNext());
 }
@@ -34,4 +38,12 @@ function getHistory(req, res) {
   res.status(200).json(queue.getHistory(req.params.userId));
 }
 
-module.exports = { joinQueue, leaveQueue, getStatus, getQueue, serveNext, getHistory };
+module.exports = {
+  joinQueue,
+  leaveQueue,
+  getStatus,
+  getQueue,
+  getSummary,
+  serveNext,
+  getHistory,
+};

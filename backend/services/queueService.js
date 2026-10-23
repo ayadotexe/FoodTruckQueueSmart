@@ -163,6 +163,15 @@ function createQueueService({ onNotify = () => {} } = {}) {
       const ordered = sorted();
       return ordered.map((e) => view(e, ordered));
     },
+    
+    // Public: how busy the line is (for the user dashboard)
+    // estimatedWaitMinutes = how long someone joining right now would wait
+    getSummary() {
+      return {
+        count: waiting.length,
+        estimatedWaitMinutes: waiting.reduce((sum, e) => sum + prepTime(e), 0),
+      };
+    },
 
     // Admin: serve the next user
     serveNext() {
