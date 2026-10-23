@@ -1,32 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./JoinQueue.css";
+import { getCurrentUserId } from "../../currentUser";
+import { useCart } from "../../context/CartContext";
 
 // mock order (matches the View Order mockup)
-// ordersAhead = people ahead of you who ordered this item
 // prepMinutes = how long one order of this item takes to make
-const MOCK_ORDER = [
-  {
-    id: 1,
-    name: "Tacos al pastor",
-    quantity: 5,
-    addOns: ["salsa verde", "jalapeños"],
-    price: 1.4, // per item
-    ordersAhead: 2,
-    prepMinutes: 3,
-  },
-  {
-    id: 2,
-    name: "Bottled coke",
-    quantity: 1,
-    addOns: [],
-    price: 1.34,
-    ordersAhead: 0,
-    prepMinutes: 0,
-  },
-];
+// (ordersAhead is no longer used; the backend works out the wait)
 
-const POSITION_AFTER_JOIN = 3; // mock: 2 people ahead, so you're 3rd
+// DELETE LATER
+// const MOCK_ORDER = [
+//   {
+//     id: 1,
+//     name: "Tacos al pastor",
+//     quantity: 5,
+//     addOns: ["salsa verde", "jalapeños"],
+//     price: 1.4, // per item
+//     ordersAhead: 2,
+//     prepMinutes: 3,
+//   },
+//   {
+//     id: 2,
+//     name: "Bottled coke",
+//     quantity: 1,
+//     addOns: [],
+//     price: 1.34,
+//     ordersAhead: 0,
+//     prepMinutes: 0,
+//   },
+// ];
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -37,36 +39,103 @@ const ordinal = (n) => {
 function JoinQueue() {
   const navigate = useNavigate();
 
-  const [items, setItems] = useState(MOCK_ORDER);
-  const [placed, setPlaced] = useState(false); // true = order placed, in the queue
-  const [error, setError] = useState("");
+  // DELETE LATER
+  // const [items, setItems] = useState(MOCK_ORDER); 
 
-  // estimated wait: for each item, people ahead who ordered it x how long it takes
-  const estimatedWait = items.reduce(
-    (sum, i) => sum + i.ordersAhead * i.prepMinutes,
-    0
+  const { cart, clearCart } = useCart();
+
+  const [items, setItems] = useState(() =>
+      cart.map((item) => ({
+          ...item,
+          addOns: item.selectedAddons || [],
+          prepMinutes: item.expectedDuration,
+      }))
   );
+
+  const [placed, setPlaced] = useState(false); // true = order placed, in the queue
+  const [queueInfo, setQueueInfo] = useState(null); // backend response: position + estimated wait
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const total = items
     .reduce((sum, i) => sum + i.price * i.quantity, 0)
     .toFixed(2);
 
-  const handleRemove = (id) => {
-    setItems(items.filter((i) => i.id !== id));
+  // const handleRemove = (id) => {
+  //   setItems(items.filter((i) => i.id !== id));
+  //   setError("");
+  // };
+
+  const handleRemove = (indexToRemove) => {
+    setItems((previousItems) =>
+        previousItems.filter((_, index) => index !== indexToRemove)
+    );
     setError("");
   };
 
   // validation: you can't join the queue with an empty order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (!getCurrentUserId()) {
+      setError("Please log in before joining the queue.");
+      return;
+    }
+
     if (items.length === 0) {
       setError("Add at least one item before placing your order.");
       return;
     }
     setError("");
-    setPlaced(true); // replace with an API call later
+    setLoading(true);
+    try {
+      const res = await fetch("/api/queue/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: getCurrentUserId(),
+          items: items.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            prepMinutes: Math.max(1, i.prepMinutes), // backend requires at least 1
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not join the queue.");
+        return;
+      }
+      setQueueInfo(data);
+      setPlaced(true);
+      clearCart(); // added by aya
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLeave = () => setPlaced(false);
+  const handleLeave = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/queue/leave/${encodeURIComponent(getCurrentUserId())}`,
+        { method: "DELETE" }
+      );
+      // 404 means we're already not in the queue, so just reset the screen
+      if (!res.ok && res.status !== 404) {
+        const data = await res.json();
+        setError(data.error || "Could not leave the queue.");
+        return;
+      }
+      setPlaced(false);
+      setQueueInfo(null);
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="join-queue">
@@ -78,13 +147,14 @@ function JoinQueue() {
       </header>
 
       {/* after the order is placed */}
-      {placed && (
+      {placed && queueInfo && (
         <section className="confirm-card" aria-live="polite">
           <p className="label">You are</p>
-          <p className="position">{ordinal(POSITION_AFTER_JOIN)}</p>
+          <p className="position">{ordinal(queueInfo.position)}</p>
           <p className="label">in line</p>
           <p className="wait">
-            Estimated wait time: <strong>{estimatedWait} minutes</strong>
+            Estimated wait time:{" "}
+            <strong>{queueInfo.estimatedWaitMinutes} minutes</strong>
           </p>
         </section>
       )}
@@ -97,8 +167,11 @@ function JoinQueue() {
           <p className="empty">Your order is empty.</p>
         ) : (
           <ul className="order-list">
-            {items.map((i) => (
-              <li key={i.id} className="order-item">
+            {/* {items.map((i) => (
+              <li key={i.id} className="order-item"> */}
+
+            {items.map((i, index) => (
+              <li key={i.cartItemId || index} className="order-item">
                 <div className="item-info">
                   <span className="item-name">{i.name}</span>
                   <span className="item-detail">quantity: {i.quantity}</span>
@@ -114,7 +187,8 @@ function JoinQueue() {
                     <button
                       type="button"
                       className="link-button"
-                      onClick={() => handleRemove(i.id)}
+                      // onClick={() => handleRemove(i.id)}
+                      onClick={() => handleRemove(index)}
                       aria-label={`Remove ${i.name}`}
                     >
                       remove
@@ -150,8 +224,8 @@ function JoinQueue() {
       {/* buttons at the bottom */}
       <div className="join-buttons">
         {!placed && (
-          <button type="button" onClick={handlePlaceOrder}>
-            Place order &amp; join queue
+          <button type="button" onClick={handlePlaceOrder} disabled={loading}>
+            {loading ? "Placing order..." : "Place order & join queue"}
           </button>
         )}
 
@@ -160,7 +234,12 @@ function JoinQueue() {
             <button type="button" onClick={() => navigate("/queue-status")}>
               View queue status
             </button>
-            <button type="button" className="outline" onClick={handleLeave}>
+            <button
+              type="button"
+              className="outline"
+              onClick={handleLeave}
+              disabled={loading}
+            >
               Leave queue
             </button>
           </>
