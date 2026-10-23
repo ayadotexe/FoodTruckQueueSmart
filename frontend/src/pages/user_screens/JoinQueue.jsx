@@ -2,30 +2,33 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./JoinQueue.css";
 import { getCurrentUserId } from "../../currentUser";
+import { useCart } from "../../context/CartContext";
 
 // mock order (matches the View Order mockup)
 // prepMinutes = how long one order of this item takes to make
 // (ordersAhead is no longer used; the backend works out the wait)
-const MOCK_ORDER = [
-  {
-    id: 1,
-    name: "Tacos al pastor",
-    quantity: 5,
-    addOns: ["salsa verde", "jalapeños"],
-    price: 1.4, // per item
-    ordersAhead: 2,
-    prepMinutes: 3,
-  },
-  {
-    id: 2,
-    name: "Bottled coke",
-    quantity: 1,
-    addOns: [],
-    price: 1.34,
-    ordersAhead: 0,
-    prepMinutes: 0,
-  },
-];
+
+// DELETE LATER
+// const MOCK_ORDER = [
+//   {
+//     id: 1,
+//     name: "Tacos al pastor",
+//     quantity: 5,
+//     addOns: ["salsa verde", "jalapeños"],
+//     price: 1.4, // per item
+//     ordersAhead: 2,
+//     prepMinutes: 3,
+//   },
+//   {
+//     id: 2,
+//     name: "Bottled coke",
+//     quantity: 1,
+//     addOns: [],
+//     price: 1.34,
+//     ordersAhead: 0,
+//     prepMinutes: 0,
+//   },
+// ];
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -36,7 +39,19 @@ const ordinal = (n) => {
 function JoinQueue() {
   const navigate = useNavigate();
 
-  const [items, setItems] = useState(MOCK_ORDER);
+  // DELETE LATER
+  // const [items, setItems] = useState(MOCK_ORDER); 
+
+  const { cart, clearCart } = useCart();
+
+  const [items, setItems] = useState(() =>
+      cart.map((item) => ({
+          ...item,
+          addOns: item.selectedAddons || [],
+          prepMinutes: item.expectedDuration,
+      }))
+  );
+
   const [placed, setPlaced] = useState(false); // true = order placed, in the queue
   const [queueInfo, setQueueInfo] = useState(null); // backend response: position + estimated wait
   const [loading, setLoading] = useState(false);
@@ -46,8 +61,15 @@ function JoinQueue() {
     .reduce((sum, i) => sum + i.price * i.quantity, 0)
     .toFixed(2);
 
-  const handleRemove = (id) => {
-    setItems(items.filter((i) => i.id !== id));
+  // const handleRemove = (id) => {
+  //   setItems(items.filter((i) => i.id !== id));
+  //   setError("");
+  // };
+
+  const handleRemove = (indexToRemove) => {
+    setItems((previousItems) =>
+        previousItems.filter((_, index) => index !== indexToRemove)
+    );
     setError("");
   };
 
@@ -84,6 +106,7 @@ function JoinQueue() {
       }
       setQueueInfo(data);
       setPlaced(true);
+      clearCart(); // added by aya
     } catch {
       setError("Could not reach the server. Is the backend running?");
     } finally {
@@ -144,8 +167,11 @@ function JoinQueue() {
           <p className="empty">Your order is empty.</p>
         ) : (
           <ul className="order-list">
-            {items.map((i) => (
-              <li key={i.id} className="order-item">
+            {/* {items.map((i) => (
+              <li key={i.id} className="order-item"> */}
+
+            {items.map((i, index) => (
+              <li key={i.cartItemId || index} className="order-item">
                 <div className="item-info">
                   <span className="item-name">{i.name}</span>
                   <span className="item-detail">quantity: {i.quantity}</span>
@@ -161,7 +187,8 @@ function JoinQueue() {
                     <button
                       type="button"
                       className="link-button"
-                      onClick={() => handleRemove(i.id)}
+                      // onClick={() => handleRemove(i.id)}
+                      onClick={() => handleRemove(index)}
                       aria-label={`Remove ${i.name}`}
                     >
                       remove
