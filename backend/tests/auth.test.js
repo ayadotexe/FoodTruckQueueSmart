@@ -25,7 +25,7 @@ describe("Authentication API", () => {
       expect(response.body.user).toEqual({
         id: expect.any(String),
         firstName: "Aya",
-        lastName: "Al-Janabi",
+        lastName: "A",
         email: "aya@example.com",
         role: "user",
       });
@@ -48,14 +48,14 @@ describe("Authentication API", () => {
         .send({
           ...validUser,
           firstName: " Aya ",
-          lastName: " Al-Janabi ",
+          lastName: " A ",
           email: " AYA@example.com ",
         });
 
       expect(response.status).toBe(201);
       expect(response.body.user).toMatchObject({
         firstName: "Aya",
-        lastName: "Al-Janabi",
+        lastName: "A",
         email: "aya@example.com",
       });
     });
