@@ -1,30 +1,123 @@
 const store = require('../menu/store');
+const pool = require("../db");
 
-exports.getMenu = (req, res) => {
-  res.status(200).json(store.menuItems);
+exports.getMenu = async (req, res) => {
+  const [rows] = await pool.execute(`
+    SELECT
+      menu_item_id,
+      name,
+      description,
+      category,
+      price,
+      image_url,
+      expected_duration_minutes,
+      addons
+    FROM MenuItem
+    WHERE is_active = TRUE
+    ORDER BY menu_item_id
+  `);
+
+  const menu = rows.map((item) => ({
+    id: item.menu_item_id,
+    name: item.name,
+    description: item.description || "",
+    category: item.category,
+    price: Number(item.price),
+    image: item.image_url || "",
+    expectedDuration: item.expected_duration_minutes,
+    priorityLevel: "Normal",
+    addons: item.addons || [],
+  }));
+
+  res.status(200).json(menu);
 };
 
-exports.addMenuItem = (req, res) => {
-  const { name, description, expectedDuration, priorityLevel, category, price, image } = req.body;
+exports.addMenuItem = async (req, res) => {
+  const {
+    name,
+    description = "",
+    category = "food",
+    price = 0,
+    image = "",
+    expectedDuration = 5,
+  } = req.body || {};
 
-  if (!name || typeof name !== 'string' || name.length > 50) {
-    return res.status(400).json({ error: "Valid name under 50 characters is required." });
+  if (
+    typeof name !== "string" ||
+    !name.trim() ||
+    name.length > 50
+  ) {
+    return res.status(400).json({
+      error: "Name must contain 1–50 characters.",
+    });
   }
 
-  const newItem = {
-    id: store.nextId++,
-    name,
-    description: description || "",
-    category: category || "food",
-    price: price || 0,
-    image: image || "", // image link
-    expectedDuration: expectedDuration || 5,
-    priorityLevel: priorityLevel || "Normal",
-    addons: []
-  };
-  
-  store.menuItems.push(newItem);
-  res.status(201).json(newItem);
+  if (
+    typeof description !== "string" ||
+    description.length > 5000 ||
+    typeof image !== "string" ||
+    image.length > 2048
+  ) {
+    return res.status(400).json({
+      error: "Description or image URL is invalid or too long.",
+    });
+  }
+
+  if (!["food", "drink"].includes(category)) {
+    return res.status(400).json({
+      error: "Category must be food or drink.",
+    });
+  }
+
+  if (
+    typeof price !== "number" ||
+    !Number.isFinite(price) ||
+    price < 0 ||
+    price > 99999999.99 ||
+    Math.abs(price * 100 - Math.round(price * 100)) > 0.000001
+  ) {
+    return res.status(400).json({
+      error: "Price must be a nonnegative number with at most two decimal places.",
+    });
+  }
+
+  if (
+    !Number.isInteger(expectedDuration) ||
+    expectedDuration < 1 ||
+    expectedDuration > 60
+  ) {
+    return res.status(400).json({
+      error: "Preparation time must be an integer from 1 to 60 minutes.",
+    });
+  }
+
+  const [result] = await pool.execute(
+    `INSERT INTO MenuItem
+      (name, description, category, price, image_url,
+       expected_duration_minutes, addons)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      name.trim(),
+      description,
+      category,
+      price,
+      image,
+      expectedDuration,
+      JSON.stringify([]),
+    ]
+  );
+
+  res.status(201).json({
+    id: result.insertId,
+    name: name.trim(),
+    description,
+    category,
+    price,
+    image,
+    expectedDuration,
+    priorityLevel: "Normal",
+    addons: [],
+  });
 };
 
 exports.deleteMenuItem = (req, res) => {
