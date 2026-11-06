@@ -4,10 +4,10 @@ import "./user_cart.css";
 
 function UserCart() {
     const navigate = useNavigate();
-    const { cart, removeFromCart, clearCart } = useCart();
+    const { cart, removeFromCart, updateQuantity } = useCart();
 
     const calculateTotal = () => {
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        return cart.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
     };
 
     const handleCheckout = () => {
@@ -17,6 +17,7 @@ function UserCart() {
         alert("Order submitted to the queue!");
         clearCart();
         navigate('/'); // Redirect back to dashboard
+        navigate("/join-queue");
     };
 
     return (
@@ -34,16 +35,27 @@ function UserCart() {
                 </div>
             ) : (
                 <div className="cart-list">
-                    {cart.map((item, index) => (
-                        <div key={item.cartItemId || index} className="cart-item">
+                    {cart.map((item) => (
+                        <div key={item.cart_item_id} className="cart-item">
                             <div className="cart-item-details">
-                                <span className="item-name">{item.quantity}x {item.name}</span>
+                                <span className="item-name">{item.name}</span>
                                 {item.selectedAddons && item.selectedAddons.length > 0 && (
                                     <span className="cart-addons">+{item.selectedAddons.join(", ")}</span>
                                 )}
-                                <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                                <span className="item-price">${(Number(item.price) * item.quantity).toFixed(2)}</span>
                             </div>
-                            <button className="remove-cart-btn" onClick={() => removeFromCart(index)}>
+                            
+                            <div className="quantity-controls">
+                                <button onClick={() => updateQuantity(item.cart_item_id, item.quantity - 1)}>
+                                    -
+                                </button>
+                                <span>{item.quantity}</span>
+                                <button onClick={() => updateQuantity(item.cart_item_id, item.quantity + 1)}>
+                                    +
+                                </button>
+                            </div>
+
+                            <button className="remove-cart-btn" onClick={() => removeFromCart(item.cart_item_id)}>
                                 Remove
                             </button>
                         </div>

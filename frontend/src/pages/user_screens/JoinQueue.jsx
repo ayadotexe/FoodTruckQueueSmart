@@ -68,7 +68,8 @@ function JoinQueue() {
           items: items.map((i) => ({
             name: i.name,
             quantity: i.quantity,
-            prepMinutes: Math.max(1, i.prepMinutes), // backend requires at least 1
+            // check expectedDuration, then expected_duration_minutes, then default to 5 (added by denisse)
+            prepMinutes: Math.max(1, parseInt(i.expectedDuration || i.expected_duration_minutes) || 5), 
           })),
         }),
       });

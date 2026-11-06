@@ -10,7 +10,7 @@ INSERT INTO MenuItem (
     description,
     category,
     price,
-    expected_duration_minutes,
+    expected_duration,
     addons
 )
 VALUES
@@ -65,5 +65,5 @@ VALUES
 
 SELECT * FROM Queue;
 
-SELECT menu_item_id, name, price, expected_duration_minutes
+SELECT menu_item_id, name, price, expected_duration
 FROM MenuItem;

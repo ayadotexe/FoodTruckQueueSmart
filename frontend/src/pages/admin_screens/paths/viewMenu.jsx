@@ -4,7 +4,6 @@ import "./viewMenu.css";
 
 function ViewMenu() {
     const navigate = useNavigate();
-
     const [menu, setMenu] = useState([]);
     
     // popup check
@@ -16,19 +15,26 @@ function ViewMenu() {
         name: "", description: "", price: "", image: "", category: "food", expectedDuration: ""
     });
 
-    useEffect(() => {
+    // 1. MASTER FETCH FUNCTION: Pulls the exact live state from MySQL
+    const fetchMenu = () => {
         fetch('http://localhost:3000/api/menu')
             .then(res => res.json())
             .then(data => setMenu(data))
             .catch(err => console.error("Failed to fetch menu:", err));
+    };
+
+    // Run once on load
+    useEffect(() => {
+        fetchMenu();
     }, []);
 
     // --- DELETE ---
     const confirmRemove = () => {
         if (!itemToDelete) return;
-        fetch(`http://localhost:3000/api/menu/${itemToDelete.id}`, { method: 'DELETE' })
+        // CHANGED: Use menu_item_id instead of id
+        fetch(`http://localhost:3000/api/menu/${itemToDelete.menu_item_id}`, { method: 'DELETE' })
             .then(() => {
-                setMenu(menu.filter(item => item.id !== itemToDelete.id));
+                fetchMenu(); // INSTANT UI UPDATE
                 setItemToDelete(null);
             })
             .catch(err => console.error("Failed to delete item:", err));
@@ -42,9 +48,7 @@ function ViewMenu() {
         const itemToSubmit = {
             ...newItem,
             price: parseFloat(newItem.price) || 0,
-            expectedDuration: waitTime,
-            priorityLevel: "Normal",
-            addons: []
+            expectedDuration: waitTime
         };
 
         fetch('http://localhost:3000/api/menu', {
@@ -52,11 +56,12 @@ function ViewMenu() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(itemToSubmit)
         })
-            .then(res => res.json())
-            .then(addedItem => {
-                setMenu([...menu, addedItem]); 
-                setIsAddModalOpen(false);
-                setNewItem({ name: "", description: "", price: "", image: "", category: "food", expectedDuration: "" });
+            .then(res => {
+                if (res.ok) {
+                    fetchMenu(); // INSTANT UI UPDATE
+                    setIsAddModalOpen(false);
+                    setNewItem({ name: "", description: "", price: "", image: "", category: "food", expectedDuration: "" });
+                }
             })
             .catch(err => console.error("Failed to add item:", err));
     };
@@ -64,9 +69,6 @@ function ViewMenu() {
     // --- Edit Logic ---
     const handleEditSubmit = (e) => {
         e.preventDefault();
-        
-        setEditingItem(null); 
-
         const waitTime = editingItem.category === "drink" ? 3 : (parseInt(editingItem.expectedDuration) || 5);
 
         const itemToSubmit = {
@@ -75,14 +77,17 @@ function ViewMenu() {
             expectedDuration: waitTime
         };
 
-        fetch(`http://localhost:3000/api/menu/${editingItem.id}`, {
+        // CHANGED: Use menu_item_id instead of id
+        fetch(`http://localhost:3000/api/menu/${editingItem.menu_item_id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(itemToSubmit)
         })
-            .then(res => res.json())
-            .then(updatedItem => {
-                setMenu(menu.map(item => item.id === editingItem.id ? updatedItem : item));
+            .then(res => {
+                if (res.ok) {
+                    fetchMenu(); // INSTANT UI UPDATE
+                    setEditingItem(null);
+                }
             })
             .catch(err => console.error("Failed to update item:", err));
     };
@@ -93,11 +98,13 @@ function ViewMenu() {
     const renderItems = (items) => (
         <div className="menu-list">
             {items.map(item => (
-                <div key={item.id} className="menu-item">
+                // CHANGED: Use menu_item_id instead of id
+                <div key={item.menu_item_id} className="menu-item">
                     
                     <div className="item-image-container">
-                        {item.image ? (
-                            <img src={item.image} alt={item.name} className="item-image" />
+                        {/* CHANGED: Use image_url instead of image */}
+                        {item.image_url ? (
+                            <img src={item.image_url} alt={item.name} className="item-image" />
                         ) : (
                             <div className="item-image-placeholder"></div>
                         )}
@@ -111,7 +118,10 @@ function ViewMenu() {
                     <div className="menu-actions">
                         <span 
                             className="action-link"
-                            onClick={() => setEditingItem(item)}>
+                            onClick={() => {
+                                // Maps DB column back to the state field your form expects
+                                setEditingItem({...item, image: item.image_url || "", expectedDuration: item.expected_duration_minutes || ""});
+                            }}>
                             edit item
                         </span>
                         <span 

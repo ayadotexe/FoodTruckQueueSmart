@@ -3,32 +3,103 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-    // Load initial cart from localStorage so it survives page refreshes
-    const [cart, setCart] = useState(() => {
-        const savedCart = localStorage.getItem('userCart');
-        return savedCart ? JSON.parse(savedCart) : [];
-    });
+    const [cart, setCart] = useState([]);
+    
+    // Grab the logged-in user's ID
+    const userId = localStorage.getItem('userId'); 
 
-    // Auto-save to localStorage whenever the cart changes
+    // 1. Fetch cart from database
+    const fetchCart = async () => {
+        if (!userId) return;
+        try {
+            const response = await fetch(`http://localhost:3000/api/cart/${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setCart(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch cart:", error);
+        }
+    };
+
+    // Run fetchCart automatically when the app loads or user changes
     useEffect(() => {
-        localStorage.setItem('userCart', JSON.stringify(cart));
-    }, [cart]);
+        fetchCart();
+    }, [userId]);
 
-    const addToCart = (item) => {
-        setCart(prevCart => [...prevCart, item]);
+    // 2. Add to cart
+    const addToCart = async (item) => {
+        if (!userId) return alert("Please log in to add items.");
+        
+        try {
+            const response = await fetch(`http://localhost:3000/api/cart/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    menu_item_id: item.menu_item_id, 
+                    quantity: item.quantity || 1
+                })
+            });
+            if (response.ok) {
+                fetchCart(); // Refresh cart from DB
+            }
+        } catch (error) {
+            console.error("Failed to add to cart:", error);
+        }
     };
 
-    const removeFromCart = (indexToRemove) => {
-        setCart(prevCart => prevCart.filter((_, index) => index !== indexToRemove));
+    // 3. Remove single item from cart
+    const removeFromCart = async (cartItemId) => {
+        if (!userId) return;
+        try {
+            const response = await fetch(`http://localhost:3000/api/cart/${userId}/item/${cartItemId}`, { 
+                method: 'DELETE' 
+            });
+            if (response.ok) {
+                fetchCart();
+            }
+        } catch (error) {
+            console.error("Failed to remove item:", error);
+        }
     };
 
-    const clearCart = () => {
-        setCart([]);
-        localStorage.removeItem('userCart');
+    // 4. Update specific item quantity
+    const updateQuantity = async (cartItemId, newQuantity) => {
+        if (!userId) return;
+        if (newQuantity < 1) return; // Prevent going below 1 (use remove button instead)
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/cart/${userId}/item/${cartItemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: newQuantity })
+            });
+            
+            if (response.ok) {
+                fetchCart(); 
+            }
+        } catch (error) {
+            console.error("Failed to update quantity:", error);
+        }
+    };
+
+    // 5. Clear entire cart
+    const clearCart = async () => {
+        if (!userId) return;
+        try {
+            const response = await fetch(`http://localhost:3000/api/cart/${userId}`, { 
+                method: 'DELETE' 
+            });
+            if (response.ok) {
+                setCart([]); 
+            }
+        } catch (error) {
+            console.error("Failed to clear cart:", error);
+        }
     };
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}>
             {children}
         </CartContext.Provider>
     );

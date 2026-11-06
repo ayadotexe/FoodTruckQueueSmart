@@ -3,6 +3,7 @@ const cors = require("cors");
 const queueRoutes = require("./routes/queueRoutes");
 const menuRoutes = require("./routes/MenuRoutes");
 const authRoutes = require("./routes/AuthRoutes");
+const cartRoutes = require('./routes/cartRoutes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use((err, req, res, next) => {
 
 app.use("/api/menu", menuRoutes);
 app.use("/api/auth", authRoutes);
+app.use('/api/cart', cartRoutes);
 
 app.use((err, req, res, next) => {
   if (err.type === "entity.parse.failed") {

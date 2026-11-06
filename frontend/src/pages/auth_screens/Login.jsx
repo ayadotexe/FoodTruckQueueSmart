@@ -10,39 +10,41 @@ function Login() {
     const [loading, setLoading] = useState(false)
 
     const handleSubmit = async (event) => {
-        event.preventDefault()
-        setError('')
-        setLoading(true)
+            event.preventDefault()
+            setError('')
+            setLoading(true)
 
-    const formData = new FormData(event.currentTarget)
+            const formData = new FormData(event.currentTarget)
 
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: formData.get('email'),
-                password: formData.get('password'),
-            }),
-        })
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: formData.get('email'),
+                        password: formData.get('password'),
+                    }),
+                })
 
-        const data = await response.json()
+                const data = await response.json()
 
-        if (!response.ok) {
-            setError(data.error || 'Unable to log in.')
-            return
+                if (!response.ok) {
+                    setError(data.error || 'Unable to log in.')
+                    return
+                }
+
+                sessionStorage.setItem('currentUser', JSON.stringify(data.user))
+                
+                localStorage.setItem('userId', data.user.id || data.user.user_id)
+                
+                window.location.href = data.user.role === 'admin' ? '/admin-dash' : '/user-dash'
+                
+            } catch {
+                setError('Could not reach the server. Please try again.')
+            } finally {
+                setLoading(false)
+            }
         }
-
-        navigate(
-            data.user.role === 'admin' ? '/admin-dash' : '/user-dash'
-        )
-    } catch {
-        setError('Could not reach the server. Please try again.')
-    } finally {
-        setLoading(false)
-    }
-}
-
     return (
         <div className="auth-page">
             <div className="auth-container">

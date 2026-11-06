@@ -43,7 +43,7 @@ function UserViewMenu() {
     };
 
     const handleAddToOrder = (item) => {
-        const qty = quantities[item.id] || 0;
+        const qty = quantities[item.menu_item_id] || 0;
         if (qty === 0) {
             alert("Please select a quantity first.");
             return;
@@ -53,13 +53,13 @@ function UserViewMenu() {
             ...item,
             cartItemId: Date.now() + Math.random(), 
             quantity: qty,
-            selectedAddons: customizations[item.id] || []
+            selectedAddons: customizations[item.menu_item_id] || []
         };
         
         addToCart(orderItem); 
         
-        setQuantities(prev => ({ ...prev, [item.id]: 0 }));
-        setCustomizations(prev => ({ ...prev, [item.id]: [] }));
+        setQuantities(prev => ({ ...prev, [item.menu_item_id]: 0 }));
+        setCustomizations(prev => ({ ...prev, [item.menu_item_id]: [] }));
         alert(`${qty}x ${item.name} added to cart!`);
     };
 
@@ -73,10 +73,10 @@ function UserViewMenu() {
     const renderItems = (items) => (
         <div className="menu-list">
             {items.map(item => (
-                <div key={item.id} className="menu-item">
+                <div key={item.menu_item_id} className="menu-item">
                     <div className="item-image-container">
-                        {item.image ? (
-                            <img src={item.image} alt={item.name} className="item-image" />
+                        {item.image_url ? (
+                            <img src={item.image_url} alt={item.name} className="item-image" />
                         ) : (
                             <div className="item-image-placeholder"></div>
                         )}
@@ -85,9 +85,9 @@ function UserViewMenu() {
                     <div className="item-details">
                         <span className="item-name">{item.name}</span>
                         {item.price && <span className="item-price">${Number(item.price).toFixed(2)}</span>}
-                        {customizations[item.id] && customizations[item.id].length > 0 && (
+                        {customizations[item.menu_item_id] && customizations[item.menu_item_id].length > 0 && (
                             <div className="selected-addons">
-                                {customizations[item.id].join(", ")}
+                                {customizations[item.menu_item_id].join(", ")}
                             </div>
                         )}
                     </div>
@@ -106,9 +106,9 @@ function UserViewMenu() {
                         )}
                         
                         <div className="quantity-controls">
-                            <button className="small-btn" onClick={() => updateQuantity(item.id, -1)}>-</button>
-                            <span className="qty-number">{quantities[item.id] || 0}</span>
-                            <button className="small-btn" onClick={() => updateQuantity(item.id, 1)}>+</button>
+                            <button className="small-btn" onClick={() => updateQuantity(item.menu_item_id, -1)}>-</button>
+                            <span className="qty-number">{quantities[item.menu_item_id] || 0}</span>
+                            <button className="small-btn" onClick={() => updateQuantity(item.menu_item_id, 1)}>+</button>
                         </div>
                         
                         <span 
@@ -169,8 +169,8 @@ function UserViewMenu() {
                                 <label key={idx} className="addon-checkbox">
                                     <input 
                                         type="checkbox" 
-                                        checked={(customizations[modalItem.id] || []).includes(addon)}
-                                        onChange={() => handleToggleAddon(modalItem.id, addon)}
+                                        checked={(customizations[modalItem.menu_item_id] || []).includes(addon)}
+                                        onChange={() => handleToggleAddon(modalItem.menu_item_id, addon)}
                                     />
                                     {addon}
                                 </label>
@@ -185,9 +185,9 @@ function UserViewMenu() {
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <h3>{descModalItem.name}</h3>
-                        {descModalItem.image && (
+                        {descModalItem.image_url && (
                             <img 
-                                src={descModalItem.image} 
+                                src={descModalItem.image_url} 
                                 alt={descModalItem.name} 
                                 className="modal-large-image" 
                             />
