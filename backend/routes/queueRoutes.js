@@ -26,5 +26,6 @@ router.get("/notifications/:userId",controller.getNotifications);
 router.get("/summary", controller.getSummary);
 router.get("/", requireAdmin, controller.getQueue);
 router.post("/serve-next", requireAdmin, controller.serveNext);
+router.patch("/notifications/:userId/:notificationId/viewed", controller.markNotificationAsViewed);
 
 module.exports = router;

@@ -5,7 +5,31 @@
  */
 const request = require("supertest");
 
+jest.mock("../services/history", () => ({
+  EVENTS: {
+    JOINED: "JOINED",
+    LEFT: "CANCELED",
+    SERVED: "SERVED",
+  },
+  record: jest.fn(),
+  getHistory: jest.fn(),
+}));
+
+jest.mock("../services/notification", () => ({
+  TYPES: {
+    JOINED: "JOINED",
+    NEAR_FRONT: "NEAR_FRONT",
+    SERVED: "SERVED",
+  },
+  notify: jest.fn().mockResolvedValue({}),
+  getNotifications: jest.fn(),
+  markAsViewed: jest.fn(),
+}));
+
 const ADMIN = { "x-user-role": "admin" };
+
+const USER_ID = "11111111-1111-4111-8111-111111111111";
+
 const body = (userId, extra = {}) => ({
   userId,
   items: [{ name: "Taco", quantity: 2, prepMinutes: 5 }],
@@ -14,11 +38,17 @@ const body = (userId, extra = {}) => ({
 
 describe("queue routes", () => {
   let app;
+  let history;
 
   beforeEach(() => {
-    jest.resetModules(); // fresh controller = fresh in-memory queue
-    jest.spyOn(console, "log").mockImplementation(() => {}); // silence notification logs
+    jest.resetModules();
+
+    jest.spyOn(console, "log").mockImplementation(() => {});
+
     app = require("../app");
+    history = require("../services/history");
+
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -130,17 +160,28 @@ describe("queue routes", () => {
   });
 
   describe("GET /api/queue/history/:userId", () => {
-    it("returns a user's served history", async () => {
-      await request(app).post("/api/queue/join").send(body("a"));
-      await request(app).post("/api/queue/serve-next").set(ADMIN);
-      const res = await request(app).get("/api/queue/history/a");
+    it("returns a user's history", async () => {
+      const records = [
+        { history_id: 1, event: "SERVED" },
+        { history_id: 2, event: "JOINED" },
+      ];
+
+      history.getHistory.mockResolvedValue(records);
+
+      const res = await request(app)
+        .get(`/api/queue/history/${USER_ID}`);
+
       expect(res.status).toBe(200);
-      expect(res.body).toHaveLength(1);
-      expect(res.body[0].status).toBe("served");
+      expect(res.body).toEqual(records);
+      expect(history.getHistory).toHaveBeenCalledWith(USER_ID);
     });
 
     it("returns an empty list for a user with no history", async () => {
-      const res = await request(app).get("/api/queue/history/ghost");
+      history.getHistory.mockResolvedValue([]);
+
+      const res = await request(app)
+        .get(`/api/queue/history/${USER_ID}`);
+
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
     });

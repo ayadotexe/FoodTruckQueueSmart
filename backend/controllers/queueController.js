@@ -1,7 +1,7 @@
+
 /**
  * Queue Management Module - Controller
- * Handles request/response for the queue endpoints and shares one
- * in-memory queue service. Notifications are logged for now.
+ * Handles request/response for queue endpoints.
  */
 const history = require("../services/history");
 const notification = require("../services/notification");
@@ -11,44 +11,67 @@ const queue = createQueueService({
   onNotify: (n) => {
     const typeMap = {
       JOINED: notification.TYPES.JOINED,
-      NEAR_FRONT: notification.TYPES.NEAR_TURN,
+      NEAR_FRONT: notification.TYPES.NEAR_FRONT,
       SERVED: notification.TYPES.SERVED,
     };
 
     const type = typeMap[n.type];
 
     if (type) {
-      notification.notify(n.userId, type, n.message);
+      notification
+        .notify(n.userId, type, n.message, {
+          entryId: n.entryId ?? null,
+        })
+        .catch((error) => {
+          console.error("Failed to save notification:", error);
+        });
     }
 
     console.log("[notification]", n);
   },
 });
 
-// Express 5 forwards errors thrown here to the error handler in app.js
-function joinQueue(req, res) {
+// Only records history when a real database entry ID is available.
+async function recordHistory(userId, entryId, event, position = null) {
+  if (!entryId) {
+    console.warn(
+      `History not saved for ${userId}: database entry ID is unavailable.`
+    );
+    return null;
+  }
+
+  return history.record(userId, {
+    entryId,
+    event,
+    position,
+  });
+}
+
+async function joinQueue(req, res) {
   const result = queue.joinQueue(req.body);
 
-  history.record(result.userId, {
-    truckId: null,
-    event: history.EVENTS.JOINED,
-    position: result.position,
-  });
+  await recordHistory(
+    result.userId,
+    result.entryId,
+    history.EVENTS.JOINED,
+    result.position
+  );
 
   res.status(201).json(result);
 }
 
-function leaveQueue(req, res) {
+async function leaveQueue(req, res) {
   const userId = req.params.userId;
   const previousStatus = queue.getStatus(userId);
 
   const result = queue.leaveQueue(userId);
 
-  history.record(userId, {
-    truckId: null,
-    event: history.EVENTS.LEFT,
-    position: previousStatus.position,
-  });
+  await recordHistory(
+    userId,
+    result.entryId,
+    history.EVENTS.LEFT,
+    previousStatus.position
+  );
 
   res.status(200).json(result);
 }
@@ -65,25 +88,38 @@ function getSummary(req, res) {
   res.status(200).json(queue.getSummary());
 }
 
-function serveNext(req, res) {
+async function serveNext(req, res) {
   const result = queue.serveNext();
 
-  history.record(result.userId, {
-    truckId: null,
-    event: history.EVENTS.SERVED,
-  });
+  await recordHistory(
+    result.userId,
+    result.entryId,
+    history.EVENTS.SERVED
+  );
 
   res.status(200).json(result);
 }
 
-function getHistory(req, res) {
-  res.status(200).json(history.getHistory(req.params.userId));
+async function getHistory(req, res) {
+  const result = await history.getHistory(req.params.userId);
+  res.status(200).json(result);
 }
 
-function getNotifications(req, res) {
-  res.status(200).json(
-    notification.getNotifications(req.params.userId)
+async function getNotifications(req, res) {
+  const result = await notification.getNotifications(req.params.userId);
+  res.status(200).json(result);
+}
+
+async function markNotificationAsViewed(req, res) {
+  const notificationId = Number(req.params.notificationId);
+  const userId = req.params.userId;
+
+  const result = await notification.markAsViewed(
+    notificationId,
+    userId
   );
+
+  res.status(200).json(result);
 }
 
 module.exports = {
@@ -95,5 +131,5 @@ module.exports = {
   serveNext,
   getHistory,
   getNotifications,
-
+  markNotificationAsViewed
 };
