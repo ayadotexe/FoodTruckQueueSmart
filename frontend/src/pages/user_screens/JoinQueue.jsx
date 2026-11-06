@@ -9,6 +9,7 @@ import { CURRENT_USER_ID } from "../../currentUser";
 const MOCK_ORDER = [
   {
     id: 1,
+    menuItemId: 2, // Tacos Al Pastor in the MenuItem table
     name: "Tacos al pastor",
     quantity: 5,
     addOns: ["salsa verde", "jalapeños"],
@@ -18,6 +19,7 @@ const MOCK_ORDER = [
   },
   {
     id: 2,
+    menuItemId: 5, // Bottled Coke in the MenuItem table
     name: "Bottled coke",
     quantity: 1,
     addOns: [],
@@ -65,10 +67,9 @@ function JoinQueue() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: CURRENT_USER_ID,
-          items: items.map((i) => ({
-            name: i.name,
-            quantity: i.quantity,
-            prepMinutes: Math.max(1, i.prepMinutes), // backend requires at least 1
+            items: items.map((i) => ({
+              menuItemId: i.menuItemId,
+              quantity: i.quantity,
           })),
         }),
       });
