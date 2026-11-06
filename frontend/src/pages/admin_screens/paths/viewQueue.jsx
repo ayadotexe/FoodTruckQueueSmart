@@ -1,35 +1,75 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import userIcon from "../../../assets/icon.png";
 import "./ViewQueue.css";
 
+// Temporary admin check until login is connected (the backend expects this header)
+const ADMIN_HEADERS = { "x-user-role": "admin" };
+
 function ViewQueue() {
     const navigate = useNavigate();
 
-    // simulated queue
-    const [queue, setQueue] = useState([
-        { id: 1, name: "user 1" },
-        { id: 2, name: "user 2" },
-        { id: 3, name: "user 3" },
-    ]);
+    const [queue, setQueue] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    // drag
-    const dragItem = useRef(null);
-    const dragOverItem = useRef(null);
-
-    const handleRemove = (id) => {
-        setQueue(queue.filter(user => user.id !== id));
+    const loadQueue = async () => {
+        try {
+            const res = await fetch("/api/queue", { headers: ADMIN_HEADERS });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || "Could not load the queue.");
+                return;
+            }
+            setQueue(data);
+            setError("");
+        } catch {
+            setError("Could not reach the server. Is the backend running?");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSort = () => {
-        let _queue = [...queue];
-        const draggedItemContent = _queue.splice(dragItem.current, 1)[0];
-        _queue.splice(dragOverItem.current, 0, draggedItemContent);
+    useEffect(() => {
+        loadQueue();
+    }, []);
 
-        dragItem.current = null;
-        dragOverItem.current = null;
-        setQueue(_queue);
+    const handleRemove = async (userId) => {
+        try {
+            const res = await fetch(
+                `/api/queue/leave/${encodeURIComponent(userId)}`,
+                { method: "DELETE" }
+            );
+            if (!res.ok && res.status !== 404) {
+                const data = await res.json();
+                setError(data.error || "Could not remove that user.");
+                return;
+            }
+            await loadQueue();
+        } catch {
+            setError("Could not reach the server. Is the backend running?");
+        }
     };
+
+    const handleServeNext = async () => {
+        try {
+            const res = await fetch("/api/queue/serve-next", {
+                method: "POST",
+                headers: ADMIN_HEADERS,
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                setError(data.error || "Could not serve the next user.");
+                return;
+            }
+            await loadQueue();
+        } catch {
+            setError("Could not reach the server. Is the backend running?");
+        }
+    };
+
+    const describeItems = (items) =>
+        items.map((i) => `${i.name} x${i.quantity}`).join(", ");
 
     return (
         <div className="dashboard view-queue-page">
@@ -44,31 +84,32 @@ function ViewQueue() {
 
             <h1>CURRENT QUEUE</h1>
 
+            {error && <p className="error" role="alert">{error}</p>}
+
+            {!loading && queue.length > 0 && (
+                <button className="action-link" onClick={handleServeNext}>
+                    serve next
+                </button>
+            )}
+
             <div className="queue-list">
-                {queue.map((user, index) => (
-                    <div 
-                        key={user.id} 
-                        className="queue-item"
-                        draggable
-                        onDragStart={() => (dragItem.current = index)}
-                        onDragEnter={() => (dragOverItem.current = index)}
-                        onDragEnd={handleSort}
-                        onDragOver={(e) => e.preventDefault()}
-                    >
+                {queue.map((entry) => (
+                    <div key={entry.id} className="queue-item">
                         <div className="user-info">
-                            <span className="drag-handle" title="Drag to reorder">⋮⋮</span>
-                            <span className="user-name">{user.name}</span>
+                            <span className="user-name">
+                                #{entry.position} {describeItems(entry.items)}
+                            </span>
                         </div>
-                        
+
                         <div className="queue-actions">
-                            <span 
-                                className="action-link" 
+                            <span
+                                className="action-link"
                                 onClick={() => navigate('/admin-order')}>
                                 view order
                             </span>
-                            <span 
-                                className="action-link remove" 
-                                onClick={() => handleRemove(user.id)}>
+                            <span
+                                className="action-link remove"
+                                onClick={() => handleRemove(entry.userId)}>
                                 remove from queue
                             </span>
                             <span className="action-link">notify for pickup</span>
@@ -78,7 +119,7 @@ function ViewQueue() {
             </div>
 
             <div className="end-of-queue">
-                end of queue
+                {loading ? "loading..." : queue.length === 0 ? "the queue is empty" : "end of queue"}
             </div>
         </div>
     );
