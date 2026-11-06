@@ -1,33 +1,39 @@
 /**
  * Tests for the queue summary (service logic + public route).
+ * The database is replaced by an in-memory fake (tests/helpers/fakeDb.js).
  */
 const request = require("supertest");
 const { createQueueService } = require("../services/queueService");
+const { createFakeDb } = require("./helpers/fakeDb");
 
+// Fake menu item 1 = Taco, 5 minutes each
 const order = (userId) => ({
   userId,
-  items: [{ name: "Taco", quantity: 2, prepMinutes: 5 }],
+  items: [{ menuItemId: 1, quantity: 2 }],
 });
 
 describe("getSummary (service)", () => {
-  it("is empty when nobody is in line", () => {
-    const queue = createQueueService();
-    expect(queue.getSummary()).toEqual({ count: 0, estimatedWaitMinutes: 0 });
+  let queue;
+
+  beforeEach(() => {
+    queue = createQueueService({ db: createFakeDb() });
   });
 
-  it("counts people and adds up their prep time", () => {
-    const queue = createQueueService();
-    queue.joinQueue(order("a")); // 2 x 5 = 10
-    queue.joinQueue(order("b")); // 2 x 5 = 10
-    expect(queue.getSummary()).toEqual({ count: 2, estimatedWaitMinutes: 20 });
+  it("is empty when nobody is in line", async () => {
+    expect(await queue.getSummary()).toEqual({ count: 0, estimatedWaitMinutes: 0 });
   });
 
-  it("drops people who were served", () => {
-    const queue = createQueueService();
-    queue.joinQueue(order("a"));
-    queue.joinQueue(order("b"));
-    queue.serveNext();
-    expect(queue.getSummary()).toEqual({ count: 1, estimatedWaitMinutes: 10 });
+  it("counts people and adds up their prep time", async () => {
+    await queue.joinQueue(order("a")); // 2 x 5 = 10
+    await queue.joinQueue(order("b")); // 2 x 5 = 10
+    expect(await queue.getSummary()).toEqual({ count: 2, estimatedWaitMinutes: 20 });
+  });
+
+  it("drops people who were served", async () => {
+    await queue.joinQueue(order("a"));
+    await queue.joinQueue(order("b"));
+    await queue.serveNext();
+    expect(await queue.getSummary()).toEqual({ count: 1, estimatedWaitMinutes: 10 });
   });
 });
 
@@ -35,8 +41,10 @@ describe("GET /api/queue/summary (route)", () => {
   let app;
 
   beforeEach(() => {
-    jest.resetModules(); // fresh in-memory queue
+    jest.resetModules(); // fresh app and fresh fake database
     jest.spyOn(console, "log").mockImplementation(() => {});
+    const fakeDb = createFakeDb();
+    jest.doMock("../db", () => fakeDb); // the real db.js is never loaded
     app = require("../app");
   });
 
