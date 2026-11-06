@@ -1,24 +1,36 @@
 /**
  * Route tests for the Queue Management Module.
  * Calls the real Express app with supertest. The app is reloaded before
- * each test so every test starts with a fresh, empty queue.
+ * each test, and the MySQL pool is replaced by an in-memory fake
+ * (tests/helpers/fakeDb.js), so every test starts with an empty queue and
+ * never touches the real database.
+ * Fake menu: 1 = Taco (5 min), 2 = Coke (3 min), 3 = Old Special (inactive).
  */
 const request = require("supertest");
+const { createFakeDb } = require("./helpers/fakeDb");
 
 const ADMIN = { "x-user-role": "admin" };
 const body = (userId, extra = {}) => ({
   userId,
-  items: [{ name: "Taco", quantity: 2, prepMinutes: 5 }],
+  items: [{ menuItemId: 1, quantity: 2 }], // 2 x 5 = 10 minutes
   ...extra,
 });
 
 describe("queue routes", () => {
   let app;
+  let fakeDb;
+
+  // Loads a fresh app wired to a fresh fake database
+  function loadApp(options) {
+    jest.resetModules();
+    fakeDb = createFakeDb(options);
+    jest.doMock("../db", () => fakeDb); // the real db.js is never loaded
+    app = require("../app");
+  }
 
   beforeEach(() => {
-    jest.resetModules(); // fresh controller = fresh in-memory queue
     jest.spyOn(console, "log").mockImplementation(() => {}); // silence notification logs
-    app = require("../app");
+    loadApp();
   });
 
   afterEach(() => {
@@ -40,6 +52,12 @@ describe("queue routes", () => {
       expect(res.body.estimatedWaitMinutes).toBe(0);
     });
 
+    it("saves the order in the database", async () => {
+      await request(app).post("/api/queue/join").send(body("a"));
+      expect(fakeDb.state.orders).toHaveLength(1);
+      expect(fakeDb.state.entries[0].status).toBe("waiting");
+    });
+
     it("returns 400 for invalid input", async () => {
       const res = await request(app).post("/api/queue/join").send({ userId: "a" });
       expect(res.status).toBe(400);
@@ -54,10 +72,36 @@ describe("queue routes", () => {
       expect(res.status).toBe(400);
     });
 
+    it("returns 400 for a menu item that does not exist", async () => {
+      const res = await request(app)
+        .post("/api/queue/join")
+        .send({ userId: "a", items: [{ menuItemId: 99, quantity: 1 }] });
+      expect(res.status).toBe(400);
+    });
+
     it("returns 409 if the user is already in the queue", async () => {
       await request(app).post("/api/queue/join").send(body("a"));
       const res = await request(app).post("/api/queue/join").send(body("a"));
       expect(res.status).toBe(409);
+    });
+
+    it("returns 409 if the queue is closed", async () => {
+      loadApp({ queueStatus: "closed" });
+      const res = await request(app).post("/api/queue/join").send(body("a"));
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 404 if the user does not exist", async () => {
+      loadApp({ knownUsers: new Set(["a"]) });
+      const res = await request(app).post("/api/queue/join").send(body("ghost"));
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 500 if the database fails", async () => {
+      fakeDb.failOn = /FROM Queue ORDER BY/;
+      const res = await request(app).post("/api/queue/join").send(body("a"));
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBeDefined();
     });
   });
 
@@ -84,6 +128,7 @@ describe("queue routes", () => {
       expect(res.status).toBe(200);
       const status = await request(app).get("/api/queue/status/a");
       expect(status.status).toBe(404);
+      expect(fakeDb.state.entries[0].status).toBe("canceled");
     });
 
     it("returns 404 if the user is not queued", async () => {
