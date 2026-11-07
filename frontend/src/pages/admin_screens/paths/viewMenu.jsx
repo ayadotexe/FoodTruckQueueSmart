@@ -6,12 +6,12 @@ function ViewMenu() {
     const navigate = useNavigate();
 
     const [menu, setMenu] = useState([]);
-    
+
     // popup check
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
-    
+
     const [newItem, setNewItem] = useState({
         name: "", description: "", price: "", image: "", category: "food", expectedDuration: ""
     });
@@ -54,7 +54,7 @@ function ViewMenu() {
         })
             .then(res => res.json())
             .then(addedItem => {
-                setMenu([...menu, addedItem]); 
+                setMenu([...menu, addedItem]);
                 setIsAddModalOpen(false);
                 setNewItem({ name: "", description: "", price: "", image: "", category: "food", expectedDuration: "" });
             })
@@ -62,30 +62,73 @@ function ViewMenu() {
     };
 
     // --- Edit Logic ---
-    const handleEditSubmit = (e) => {
-        e.preventDefault();
-        
-        setEditingItem(null); 
+    // const handleEditSubmit = (e) => {
+    //     e.preventDefault();
 
-        const waitTime = editingItem.category === "drink" ? 3 : (parseInt(editingItem.expectedDuration) || 5);
+    //     setEditingItem(null);
 
-        const itemToSubmit = {
-            ...editingItem,
-            price: parseFloat(editingItem.price) || 0,
-            expectedDuration: waitTime
-        };
+    //     const waitTime = editingItem.category === "drink" ? 3 : (parseInt(editingItem.expectedDuration) || 5);
 
-        fetch(`http://localhost:3000/api/menu/${editingItem.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(itemToSubmit)
-        })
-            .then(res => res.json())
-            .then(updatedItem => {
-                setMenu(menu.map(item => item.id === editingItem.id ? updatedItem : item));
-            })
-            .catch(err => console.error("Failed to update item:", err));
+    //     const itemToSubmit = {
+    //         ...editingItem,
+    //         price: parseFloat(editingItem.price) || 0,
+    //         expectedDuration: waitTime
+    //     };
+
+    //     fetch(`http://localhost:3000/api/menu/${editingItem.id}`, {
+    //         method: 'PUT',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify(itemToSubmit)
+    //     })
+    //         .then(res => res.json())
+    //         .then(updatedItem => {
+    //             setMenu(menu.map(item => item.id === editingItem.id ? updatedItem : item));
+    //         })
+    //         .catch(err => console.error("Failed to update item:", err));
+    // };
+
+    const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    const waitTime = editingItem.category === "drink"
+        ? 3
+        : (parseInt(editingItem.expectedDuration) || 5);
+
+    const itemToSubmit = {
+        ...editingItem,
+        price: parseFloat(editingItem.price) || 0,
+        expectedDuration: waitTime
     };
+
+    try {
+        const response = await fetch(
+            `http://localhost:3000/api/menu/${editingItem.id}`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itemToSubmit)
+            }
+        );
+
+        const updatedItem = await response.json();
+
+        if (!response.ok) {
+            throw new Error(updatedItem.error || "Failed to update item.");
+        }
+
+        setMenu(prevMenu =>
+            prevMenu.map(item =>
+                item.id === updatedItem.id ? updatedItem : item
+            )
+        );
+
+        setEditingItem(null);
+
+    } catch (err) {
+        console.error("Failed to update item:", err);
+        alert(err.message);
+    }
+};
 
     const foods = menu.filter(item => item.category === "food");
     const drinks = menu.filter(item => item.category === "drink");
@@ -94,7 +137,7 @@ function ViewMenu() {
         <div className="menu-list">
             {items.map(item => (
                 <div key={item.id} className="menu-item">
-                    
+
                     <div className="item-image-container">
                         {item.image ? (
                             <img src={item.image} alt={item.name} className="item-image" />
@@ -109,13 +152,13 @@ function ViewMenu() {
                     </div>
 
                     <div className="menu-actions">
-                        <span 
+                        <span
                             className="action-link"
                             onClick={() => setEditingItem(item)}>
                             edit item
                         </span>
-                        <span 
-                            className="action-link remove" 
+                        <span
+                            className="action-link remove"
                             onClick={() => setItemToDelete(item)}>
                             remove
                         </span>
@@ -154,11 +197,11 @@ function ViewMenu() {
                             <textarea placeholder="Description" value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} />
                             <input type="number" step="0.01" placeholder="Price (e.g. 5.99)" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} />
                             <input type="text" placeholder="Image URL" value={newItem.image} onChange={e => setNewItem({...newItem, image: e.target.value})} />
-                            
+
                             {newItem.category === "food" && (
                                 <input type="number" placeholder="Wait Time (minutes)" value={newItem.expectedDuration} onChange={e => setNewItem({...newItem, expectedDuration: e.target.value})} />
                             )}
-                            
+
                             <div className="modal-actions">
                                 <button type="button" className="cancel-btn" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
                                 <button type="submit" className="done-btn">Save Item</button>
@@ -182,11 +225,11 @@ function ViewMenu() {
                             <textarea placeholder="Description" value={editingItem.description} onChange={e => setEditingItem({...editingItem, description: e.target.value})} />
                             <input type="number" step="0.01" placeholder="Price (e.g. 5.99)" value={editingItem.price} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
                             <input type="text" placeholder="Image URL" value={editingItem.image} onChange={e => setEditingItem({...editingItem, image: e.target.value})} />
-                            
+
                             {editingItem.category === "food" && (
                                 <input type="number" placeholder="Wait Time (minutes)" value={editingItem.expectedDuration} onChange={e => setEditingItem({...editingItem, expectedDuration: e.target.value})} />
                             )}
-                            
+
                             <div className="modal-actions">
                                 <button type="button" className="cancel-btn" onClick={() => setEditingItem(null)}>Cancel</button>
                                 <button type="submit" className="done-btn">Update Item</button>

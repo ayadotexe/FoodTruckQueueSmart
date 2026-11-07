@@ -90,12 +90,11 @@ function JoinQueue() {
       const res = await fetch("/api/queue/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+                body: JSON.stringify({
           userId: getCurrentUserId(),
           items: items.map((i) => ({
-            name: i.name,
+            menuItemId: i.id,
             quantity: i.quantity,
-            prepMinutes: Math.max(1, i.prepMinutes), // backend requires at least 1
           })),
         }),
       });

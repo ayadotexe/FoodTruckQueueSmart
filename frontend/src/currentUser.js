@@ -1,14 +1,14 @@
 export function getCurrentUserId() {
-    const storedUser = sessionStorage.getItem("currentUser");
+  const storedUser = sessionStorage.getItem("currentUser");
 
-    if (!storedUser) {
-        return null;
-    }
+  if (!storedUser) {
+    return null;
+  }
 
-    try {
-        const user = JSON.parse(storedUser);
-        return typeof user.id === "string" ? user.id : null;
-    } catch {
-        return null;
-    }
+  try {
+    const user = JSON.parse(storedUser);
+    return typeof user.id === "string" ? user.id : null;
+  } catch {
+    return null;
+  }
 }

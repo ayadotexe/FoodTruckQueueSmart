@@ -1,5 +1,34 @@
+jest.mock("../config/db", () => ({
+    execute: jest.fn(),
+}));
+
 const request = require('supertest');
-const app = require('../app'); 
+const app = require('../app');
+const pool = require("../config/db");
+const store = require("../menu/store");
+
+const initialMenu = structuredClone(store.menuItems);
+const initialNextId = store.nextId;
+
+beforeEach(() => {
+    store.menuItems = structuredClone(initialMenu);
+    store.nextId = initialNextId;
+    pool.execute.mockReset();
+
+    pool.execute.mockResolvedValue([
+        initialMenu.map((item) => ({
+            menu_item_id: item.id,
+            name: item.name,
+            description: item.description,
+            category: item.category,
+            price: String(item.price),
+            image_url: item.image,
+            expected_duration_minutes: item.expectedDuration,
+            addons: item.addons,
+        })),
+        [],
+    ]);
+});
 
 describe('GET /api/menu Endpoint', () => {
     test('Should return status 200 OK', async () => {
@@ -59,8 +88,8 @@ describe('Menu API Validation & Errors', () => {
     test('POST /api/menu missing name should not return 200', async () => {
         const response = await request(app)
             .post('/api/menu')
-            .send({ category: 'food', price: 5.00 }); 
-        expect(response.statusCode).not.toBe(200); 
+            .send({ category: 'food', price: 5.00 });
+        expect(response.statusCode).not.toBe(200);
     });
 
     test('GET to non-existent route should return 404', async () => {
@@ -72,62 +101,129 @@ describe('Menu API Validation & Errors', () => {
 // NEW TESTS TO BOOST CONTROLLER COVERAGE
 describe('Admin Menu Operations (POST, PUT, DELETE)', () => {
     test('POST /api/menu should successfully create a valid item', async () => {
+        pool.execute.mockResolvedValueOnce([{ insertId: 7 }, []]);
         const response = await request(app)
             .post('/api/menu')
             .send({ name: 'Test Churro', category: 'food', price: 3.00 });
-        
-        // As long as it doesn't fail (400/500), the controller code runs
-        expect(response.statusCode).toBeLessThan(400); 
-    });
 
-    test('PUT /api/menu/:id should update an existing item', async () => {
-        const response = await request(app)
-            .put('/api/menu/1') // Trying to edit item ID 1
-            .send({ price: 6.50, name: 'Updated Carne Asada' });
-        
+        // As long as it doesn't fail (400/500), the controller code runs
         expect(response.statusCode).toBeLessThan(400);
     });
 
-    test('PUT /api/menu/:id with invalid ID should be handled', async () => {
+    // added by aya
+    test('PUT /api/menu/:id should update an existing item', async () => {
+        pool.execute
+            .mockResolvedValueOnce([{ affectedRows: 1 }, []])
+            .mockResolvedValueOnce([[
+                {
+                    menu_item_id: 1,
+                    name: "Updated Carne Asada",
+                    description: "",
+                    category: "food",
+                    price: "6.50",
+                    image_url: "",
+                    expected_duration_minutes: 5,
+                    addons: [],
+                },
+            ], []]);
+
+        const response = await request(app)
+            .put('/api/menu/1')
+            .send({ price: 6.50, name: 'Updated Carne Asada' });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.name).toBe("Updated Carne Asada");
+        expect(response.body.price).toBe(6.50);
+
+        expect(pool.execute).toHaveBeenNthCalledWith(
+            1,
+            expect.stringContaining("UPDATE MenuItem"),
+            ["Updated Carne Asada", null, null, 6.50, null, null, 1]
+        );
+    });
+
+    // added by aya
+    test('PUT /api/menu/:id returns 404 for a missing item', async () => {
+        pool.execute.mockResolvedValueOnce([{ affectedRows: 0 }, []]);
+
         const response = await request(app)
             .put('/api/menu/9999')
             .send({ price: 10.00 });
-        
-        expect(response.statusCode).not.toBe(200);
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body.error).toBe("Item not found");
     });
 
-    test('DELETE /api/menu/:id should remove an item', async () => {
-        const response = await request(app).delete('/api/menu/2'); // Delete item ID 2
-        
-        expect(response.statusCode).toBeLessThan(400);
-    });
+    // added by aya
+    test('DELETE /api/menu/:id should deactivate an item', async () => {
+        pool.execute.mockResolvedValueOnce([{ affectedRows: 1 }, []]);
 
-describe('100% Coverage Checks', () => {
-    test('GET /api/health should return 200 and a running message', async () => {
-        const response = await request(app).get('/api/health');
+        const response = await request(app).delete('/api/menu/2');
+
         expect(response.statusCode).toBe(200);
-        expect(response.body.message).toBe("QueueSmart backend is running");
+        expect(response.body.message).toBe("Item removed successfully");
+
+        expect(pool.execute).toHaveBeenCalledWith(
+            expect.stringMatching(/UPDATE MenuItem\s+SET is_active = FALSE/),
+            [2]
+        );
     });
 
-    test('POST /api/menu should reject a name over 50 characters', async () => {
-        const tooLongName = "A".repeat(51); // Creates a 51-character string
-        const response = await request(app)
-            .post('/api/menu')
-            .send({ name: tooLongName });
-        
+    // added by aya
+    test('DELETE /api/menu/:id returns 404 for a missing item', async () => {
+        pool.execute.mockResolvedValueOnce([{ affectedRows: 0 }, []]);
+
+        const response = await request(app).delete('/api/menu/9999');
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body.error).toBe("Item not found");
+    });
+
+    // added by aya
+    test('DELETE /api/menu/:id rejects an invalid ID', async () => {
+        const response = await request(app).delete('/api/menu/abc');
+
         expect(response.statusCode).toBe(400);
-        expect(response.body.error).toBe("Valid name under 50 characters is required.");
+        expect(pool.execute).not.toHaveBeenCalled();
     });
 
-    test('POST /api/menu should use default fallback values when optional fields are missing', async () => {
-        const response = await request(app)
-            .post('/api/menu')
-            .send({ name: 'Minimal Taco' }); // Sending ONLY a name
-        
-        expect(response.statusCode).toBe(201);
-        expect(response.body.category).toBe("food"); // Checks the fallback line
-        expect(response.body.price).toBe(0); // Checks the fallback line
+    // added by aya
+    test('DELETE /api/menu/:id handles database failures', async () => {
+        pool.execute.mockRejectedValueOnce(new Error("Database unavailable"));
+
+        const response = await request(app).delete('/api/menu/2');
+
+        expect(response.statusCode).toBe(500);
     });
-});
+
+    describe('100% Coverage Checks', () => {
+        test('GET /api/health should return 200 and a running message', async () => {
+            const response = await request(app).get('/api/health');
+            expect(response.statusCode).toBe(200);
+            expect(response.body.message).toBe("QueueSmart backend is running");
+        });
+
+        test('POST /api/menu should reject a name over 50 characters', async () => {
+            const tooLongName = "A".repeat(51); // Creates a 51-character string
+            const response = await request(app)
+                .post('/api/menu')
+                .send({ name: tooLongName });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.error).toBe("Name must contain 1–50 characters.");
+        });
+
+        test('POST /api/menu should use default fallback values when optional fields are missing', async () => {
+            pool.execute.mockResolvedValueOnce([{ insertId: 8 }, []]);
+
+            const response = await request(app)
+                .post('/api/menu')
+                .send({ name: 'Minimal Taco' }); // Sending ONLY a name
+
+            expect(response.statusCode).toBe(201);
+            expect(response.body.category).toBe("food"); // Checks the fallback line
+            expect(response.body.price).toBe(0); // Checks the fallback line
+        });
+    });
 
 });
