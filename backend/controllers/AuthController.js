@@ -5,7 +5,7 @@ const {
   timingSafeEqual,
 } = require("node:crypto");
 
-const pool = require("../db");
+const pool = require("../config/db");
 
 function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");

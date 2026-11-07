@@ -44,7 +44,7 @@ describe("GET /api/queue/summary (route)", () => {
     jest.resetModules(); // fresh app and fresh fake database
     jest.spyOn(console, "log").mockImplementation(() => {});
     const fakeDb = createFakeDb();
-    jest.doMock("../db", () => fakeDb); // the real db.js is never loaded
+    jest.doMock("../config/db", () => fakeDb); // the real db.js is never loaded
     app = require("../app");
   });
 

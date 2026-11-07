@@ -69,7 +69,7 @@ function validateJoin({ userId, items, priority = "normal", notes = "" }) {
 
 const NEAR_THRESHOLD = 2; // "close to being served" = position 2 or better
 
-function createQueueService({ db = require("../db"), onNotify = () => {} } = {}) {
+function createQueueService({ db = require("../config/db"), onNotify = () => {} } = {}) {
   // The single queue (first row in the Queue table)
   async function loadQueue() {
     const [rows] = await db.query(

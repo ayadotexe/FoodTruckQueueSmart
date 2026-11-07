@@ -1,5 +1,5 @@
 const store = require('../menu/store');
-const pool = require("../db");
+const pool = require("../config/db");
 
 exports.getMenu = async (req, res) => {
   const [rows] = await pool.execute(`

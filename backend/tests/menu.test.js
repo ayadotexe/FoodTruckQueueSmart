@@ -1,10 +1,10 @@
-jest.mock("../db", () => ({
+jest.mock("../config/db", () => ({
   execute: jest.fn(),
 }));
 
 const request = require('supertest');
 const app = require('../app'); 
-const pool = require("../db");
+const pool = require("../config/db");
 const store = require("../menu/store");
 
 const initialMenu = structuredClone(store.menuItems);

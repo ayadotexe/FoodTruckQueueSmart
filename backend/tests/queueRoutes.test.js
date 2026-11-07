@@ -24,7 +24,7 @@ describe("queue routes", () => {
   function loadApp(options) {
     jest.resetModules();
     fakeDb = createFakeDb(options);
-    jest.doMock("../db", () => fakeDb); // the real db.js is never loaded
+    jest.doMock("../config/db", () => fakeDb); // the real db.js is never loaded
     app = require("../app");
   }
 

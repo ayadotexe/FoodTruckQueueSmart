@@ -1,6 +1,7 @@
 // Simulated notifications: stored in memory and logged. No real email/SMS.
 const TYPES = Object.freeze({ JOINED: 'JOINED', NEAR_TURN: 'NEAR_TURN', SERVED: 'SERVED' });
 const NEAR_THRESHOLD = 2; // first 2 people in line count as "close to being served"
+const db = require("../config/db");
 
 const store = new Map(); // userId -> array of notifications
 let counter = 0;
@@ -55,8 +56,23 @@ function notifyServed(userId, name, truckId) {
   return notify(userId, TYPES.SERVED, `${name}, your order is ready at ${truckId}!`, { truckId });
 }
 
-function getNotifications(userId) {
-  return [...(store.get(userId) || [])];
+async function getNotifications(userId) {
+  const [rows] = await db.execute(
+    `SELECT
+       notification_id AS id,
+       user_id AS userId,
+       entry_id AS entryId,
+       type,
+       message,
+       created_at AS createdAt,
+       status
+     FROM Notification
+     WHERE user_id = ?
+     ORDER BY created_at DESC, notification_id DESC`,
+    [userId]
+  );
+
+  return rows;
 }
 
 function reset() {
