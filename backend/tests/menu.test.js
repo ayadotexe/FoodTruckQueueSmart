@@ -1,5 +1,34 @@
+jest.mock("../config/db", () => ({
+  execute: jest.fn(),
+}));
+
 const request = require('supertest');
 const app = require('../app'); 
+const pool = require("../config/db");
+const store = require("../menu/store");
+
+const initialMenu = structuredClone(store.menuItems);
+const initialNextId = store.nextId;
+
+beforeEach(() => {
+  store.menuItems = structuredClone(initialMenu);
+  store.nextId = initialNextId;
+  pool.execute.mockReset();
+
+  pool.execute.mockResolvedValue([
+    initialMenu.map((item) => ({
+      menu_item_id: item.id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      price: String(item.price),
+      image_url: item.image,
+      expected_duration_minutes: item.expectedDuration,
+      addons: item.addons,
+    })),
+    [],
+  ]);
+});
 
 describe('GET /api/menu Endpoint', () => {
     test('Should return status 200 OK', async () => {
@@ -72,6 +101,7 @@ describe('Menu API Validation & Errors', () => {
 // NEW TESTS TO BOOST CONTROLLER COVERAGE
 describe('Admin Menu Operations (POST, PUT, DELETE)', () => {
     test('POST /api/menu should successfully create a valid item', async () => {
+        pool.execute.mockResolvedValueOnce([{ insertId: 7 }, []]);
         const response = await request(app)
             .post('/api/menu')
             .send({ name: 'Test Churro', category: 'food', price: 3.00 });
@@ -116,10 +146,12 @@ describe('100% Coverage Checks', () => {
             .send({ name: tooLongName });
         
         expect(response.statusCode).toBe(400);
-        expect(response.body.error).toBe("Valid name under 50 characters is required.");
+        expect(response.body.error).toBe("Name must contain 1–50 characters.");
     });
 
     test('POST /api/menu should use default fallback values when optional fields are missing', async () => {
+        pool.execute.mockResolvedValueOnce([{ insertId: 8 }, []]);
+        
         const response = await request(app)
             .post('/api/menu')
             .send({ name: 'Minimal Taco' }); // Sending ONLY a name

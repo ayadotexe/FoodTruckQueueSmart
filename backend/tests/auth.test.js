@@ -1,5 +1,5 @@
 // No real MySQL connections are opened by these tests.
-jest.mock("../db", () => ({
+jest.mock("../config/db", () => ({
   getConnection: jest.fn(),
   execute: jest.fn(),
 }), { virtual: true });
@@ -33,7 +33,7 @@ describe("Authentication API", () => {
 
   beforeEach(() => {
     jest.resetModules();
-    pool = require("../db");
+    pool = require("../config/db");
 
     connection = {
       beginTransaction: jest.fn().mockResolvedValue(),

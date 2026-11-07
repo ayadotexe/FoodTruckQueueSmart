@@ -4,3 +4,5 @@ coverage/
 .env
 
 coverage/
+
+/config/global-bundle.pem
