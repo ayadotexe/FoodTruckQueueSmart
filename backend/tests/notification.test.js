@@ -1,147 +1,194 @@
-jest.mock("../config/db", () => ({
-  execute: jest.fn(),
+
+jest.mock('../config/db', () => ({
+    execute: jest.fn()
 }));
 
-const db = require("../config/db");
-const notification = require("../services/notification");
+const db = require('../config/db');
+const notification = require('../services/notification');
+
+const USER_A = '11111111-1111-4111-8111-111111111111';
+const USER_B = '22222222-2222-4222-8222-222222222222';
 
 beforeEach(() => {
-  notification.reset();
-  db.execute.mockReset();
+    jest.clearAllMocks();
 });
 
-const makeQueue = (...ids) =>
-  ids.map((id) => ({
-    userId: id,
-    name: id,
-    nearNotified: false,
-  }));
+// Simulates MySQL inserting and retrieving a notification.
+function mockSave(id, userId, type, message, entryId = null) {
+    const row = {
+        id,
+        userId,
+        type,
+        message,
+        entryId,
+        createdAt: new Date(),
+        status: 'sent'
+    };
 
-describe("Legacy notification helpers", () => {
-  test("notifyJoined builds a JOINED notification with position", () => {
-    const n = notification.notifyJoined("u1", "Aya", "taco-1", 4);
+    db.execute
+        .mockResolvedValueOnce([{ insertId: id }, []])
+        .mockResolvedValueOnce([[row], []]);
+}
 
-    expect(n).toMatchObject({
-      type: "JOINED",
-      userId: "u1",
-      truckId: "taco-1",
-      position: 4,
+describe('Notification Service', () => {
+
+    test('notifyJoined saves a JOINED notification', async () => {
+        mockSave(1, USER_A, 'JOINED',
+            'Aya, you joined the queue at taco-1. Your position: 4.');
+
+        const result = await notification.notifyJoined(
+            USER_A, 'Aya', 'taco-1', 4
+        );
+
+        expect(result).toMatchObject({
+            id: 1,
+            userId: USER_A,
+            type: 'JOINED',
+            status: 'sent'
+        });
+
+        expect(result.message).toContain('Aya');
+        expect(db.execute).toHaveBeenCalledTimes(2);
     });
-    expect(n.message).toContain("Aya");
-  });
 
-  test("checkNearTurn notifies only the first NEAR_THRESHOLD people", () => {
-    const sent = notification.checkNearTurn(
-      "t1",
-      makeQueue("a", "b", "c")
-    );
+    test('saves a notification with an entry ID', async () => {
+        mockSave(2, USER_A, 'SERVED', 'Order ready', 15);
 
-    expect(sent).toHaveLength(notification.NEAR_THRESHOLD);
-    expect(sent.map((n) => n.userId)).toEqual(["a", "b"]);
-  });
+        const result = await notification.notify(
+            USER_A, 'SERVED', 'Order ready', { entryId: 15 }
+        );
 
-  test("position 1 gets next wording and position 2 gets almost up", () => {
-    const sent = notification.checkNearTurn("t1", makeQueue("a", "b"));
-
-    expect(sent[0].message).toMatch(/you're next/);
-    expect(sent[1].message).toMatch(/almost up/);
-  });
-
-  test("each user is only notified once", () => {
-    const queue = makeQueue("a", "b");
-
-    notification.checkNearTurn("t1", queue);
-
-    expect(notification.checkNearTurn("t1", queue)).toEqual([]);
-  });
-
-  test("someone moving into range gets notified later", () => {
-    const queue = makeQueue("a", "b", "c");
-
-    notification.checkNearTurn("t1", queue);
-    queue.shift();
-
-    const sent = notification.checkNearTurn("t1", queue);
-
-    expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({
-      userId: "c",
-      type: "NEAR_TURN",
+        expect(result.entryId).toBe(15);
+        expect(db.execute.mock.calls[0][1]).toEqual([
+            USER_A, 15, 'SERVED', 'Order ready'
+        ]);
     });
-  });
 
-  test("notifyServed builds a SERVED notification", () => {
-    expect(
-      notification.notifyServed("u1", "Aya", "t1").type
-    ).toBe("SERVED");
-  });
+    test('checkNearTurn notifies only the first two users', async () => {
+        const queue = [
+            { userId: USER_A, name: 'Aya', entryId: 1, nearNotified: false },
+            { userId: USER_B, name: 'Bob', entryId: 2, nearNotified: false },
+            { userId: '33333333-3333-4333-8333-333333333333',
+              name: 'Sam', entryId: 3, nearNotified: false }
+        ];
 
-  test("generates unique legacy notification IDs", () => {
-    const first = notification.notifyJoined("u1", "Aya", "t1", 1);
-    const second = notification.notifyServed("u1", "Aya", "t1");
+        mockSave(3, USER_A, 'NEAR_FRONT', "Aya, you're next at t1! Head to the truck.", 1);
+        mockSave(4, USER_B, 'NEAR_FRONT', "Bob, you're almost up at t1 (position 2).", 2);
 
-    expect(first.id).not.toBe(second.id);
-  });
-});
+        const sent = await notification.checkNearTurn('t1', queue);
 
-describe("MySQL notification retrieval", () => {
-  test("returns saved notifications for the requested user", async () => {
-    const rows = [{
-      id: 42,
-      userId: "user-a",
-      entryId: 7,
-      type: "SERVED",
-      message: "Order ready",
-      createdAt: "2026-11-06T12:00:00.000Z",
-      status: "sent",
-    }];
+        expect(sent).toHaveLength(2);
+        expect(queue[0].nearNotified).toBe(true);
+        expect(queue[1].nearNotified).toBe(true);
+        expect(queue[2].nearNotified).toBe(false);
+    });
 
-    db.execute.mockResolvedValueOnce([rows, []]);
+    test('does not notify the same user twice', async () => {
+        const queue = [
+            { userId: USER_A, name: 'Aya', nearNotified: true }
+        ];
 
-    expect(
-      await notification.getNotifications("user-a")
-    ).toEqual(rows);
+        const sent = await notification.checkNearTurn('t1', queue);
 
-    expect(db.execute).toHaveBeenCalledWith(
-      expect.stringContaining("WHERE user_id = ?"),
-      ["user-a"]
-    );
-  });
+        expect(sent).toHaveLength(0);
+        expect(db.execute).not.toHaveBeenCalled();
+    });
 
-  test("returns an empty array when no saved notifications exist", async () => {
-    db.execute.mockResolvedValueOnce([[], []]);
+    test('does not mark nearNotified if database insert fails', async () => {
+        const queue = [
+            { userId: USER_A, name: 'Aya', nearNotified: false }
+        ];
 
-    expect(
-      await notification.getNotifications("nobody")
-    ).toEqual([]);
-  });
+        db.execute.mockRejectedValueOnce(
+            new Error('Database connection failed')
+        );
 
-  test("queries each requested user separately", async () => {
-    db.execute.mockResolvedValue([[], []]);
+        await expect(
+            notification.checkNearTurn('t1', queue)
+        ).rejects.toThrow('Database connection failed');
 
-    await notification.getNotifications("user-a");
-    await notification.getNotifications("user-b");
+        expect(queue[0].nearNotified).toBe(false);
+    });
 
-    expect(
-      db.execute.mock.calls.map((call) => call[1])
-    ).toEqual([["user-a"], ["user-b"]]);
-  });
+    test('notifyServed saves a SERVED notification', async () => {
+        mockSave(5, USER_A, 'SERVED', 'Aya, your order is ready at t1!');
 
-  test("does not return legacy in-memory messages as database records", async () => {
-    notification.notifyServed("user-a", "Aya", "t1");
-    db.execute.mockResolvedValueOnce([[], []]);
+        const result = await notification.notifyServed(
+            USER_A, 'Aya', 't1'
+        );
 
-    expect(
-      await notification.getNotifications("user-a")
-    ).toEqual([]);
-  });
+        expect(result.type).toBe('SERVED');
+    });
 
-  test("propagates database failures", async () => {
-    const error = new Error("Database unavailable");
-    db.execute.mockRejectedValueOnce(error);
+    test('retrieves only the requested user notifications', async () => {
+        db.execute.mockResolvedValueOnce([[
+            { id: 1, userId: USER_A, type: 'JOINED' }
+        ], []]);
 
-    await expect(
-      notification.getNotifications("user-a")
-    ).rejects.toBe(error);
-  });
+        const result = await notification.getNotifications(USER_A);
+
+        expect(result).toHaveLength(1);
+        expect(db.execute.mock.calls[0][1]).toEqual([USER_A]);
+    });
+
+    test('marks a notification as viewed', async () => {
+        db.execute.mockResolvedValueOnce([
+            { affectedRows: 1 }, []
+        ]);
+
+        const result = await notification.markAsViewed(1, USER_A);
+
+        expect(result.message).toBe('Notification marked as viewed.');
+
+        expect(db.execute.mock.calls[0][1]).toEqual([
+            1, USER_A
+        ]);
+    });
+
+    test('does not allow another user to mark a notification viewed', async () => {
+        db.execute.mockResolvedValueOnce([
+            { affectedRows: 0 }, []
+        ]);
+
+        await expect(
+            notification.markAsViewed(1, USER_B)
+        ).rejects.toThrow('Notification not found for this user.');
+    });
+
+    test('rejects invalid notification types', async () => {
+        await expect(
+            notification.notify(USER_A, 'INVALID', 'Test')
+        ).rejects.toThrow('Invalid notification type.');
+
+        expect(db.execute).not.toHaveBeenCalled();
+    });
+
+    test('rejects invalid user IDs', async () => {
+        await expect(
+            notification.notify('u1', 'JOINED', 'Test')
+        ).rejects.toThrow('valid 36-character ID');
+
+        expect(db.execute).not.toHaveBeenCalled();
+    });
+
+    test('rejects invalid entry IDs', async () => {
+        await expect(
+            notification.notify(
+                USER_A, 'JOINED', 'Test', { entryId: -1 }
+            )
+        ).rejects.toThrow('positive integer');
+
+        expect(db.execute).not.toHaveBeenCalled();
+    });
+
+    test('handles database errors', async () => {
+        db.execute.mockRejectedValueOnce(
+            new Error('Database error')
+        );
+
+        await expect(
+            notification.notify(USER_A, 'JOINED', 'Test')
+        ).rejects.toThrow('Database error');
+    });
+
 });

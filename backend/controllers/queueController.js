@@ -33,12 +33,32 @@ const queue = createQueueService({
 });
 
 // Express 5 forwards errors thrown here to the error handler in app.js
+// added by aya
 async function joinQueue(req, res) {
-  res.status(201).json(await queue.joinQueue(req.body));
+  const result = await queue.joinQueue(req.body);
+
+  await history.record(result.userId, {
+    entryId: result.id,
+    event: history.EVENTS.JOINED,
+    position: result.position,
+  });
+
+  res.status(201).json(result);
 }
 
+// added by aya
 async function leaveQueue(req, res) {
-  res.status(200).json(await queue.leaveQueue(req.params.userId));
+  const userId = req.params.userId;
+  const previousStatus = await queue.getStatus(userId);
+  const result = await queue.leaveQueue(userId);
+
+  await history.record(userId, {
+    entryId: previousStatus.id,
+    event: history.EVENTS.LEFT,
+    position: previousStatus.position,
+  });
+
+  res.status(200).json(result);
 }
 
 async function getStatus(req, res) {
@@ -53,12 +73,33 @@ async function getSummary(req, res) {
   res.status(200).json(await queue.getSummary());
 }
 
+// added by aya
 async function serveNext(req, res) {
-  res.status(200).json(await queue.serveNext());
+  const result = await queue.serveNext();
+
+  await history.record(result.userId, {
+    entryId: result.id,
+    event: history.EVENTS.SERVED,
+  });
+
+  res.status(200).json(result);
 }
 
+// added by aya
 async function getHistory(req, res) {
-  res.status(200).json(await queue.getHistory(req.params.userId));
+  const rows = await history.getHistory(req.params.userId);
+
+  const events = rows.map((row) => ({
+    id: row.history_id,
+    userId: row.user_id,
+    entryId: row.entry_id,
+    queueId: row.queue_id,
+    event: row.event === "CANCELED" ? "LEFT" : row.event,
+    position: row.position,
+    at: new Date(row.created_at).toISOString(),
+  }));
+
+  res.status(200).json(events);
 }
 
 // added by aya

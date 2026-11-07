@@ -1,55 +1,164 @@
+jest.mock('../config/db', () => ({
+  execute: jest.fn()
+}));
+
+const db = require('../config/db');
 const history = require('../services/history');
 
-beforeEach(() => history.reset());
+const USER_ID = '12345678-1234-1234-1234-123456789012';
+const OTHER_USER_ID = '87654321-4321-4321-4321-210987654321';
 
-test('records entries in order', () => {
-  history.record('u1', { truckId: 't1', event: history.EVENTS.JOINED, position: 3 });
-  history.record('u1', { truckId: 't1', event: history.EVENTS.SERVED });
-  expect(history.getHistory('u1').map((e) => e.event)).toEqual(['JOINED', 'SERVED']);
-  expect(history.getHistory('u1')[0]).toMatchObject({ truckId: 't1', position: 3 });
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
-test('returns a copy so callers cannot change stored history', () => {
-  history.record('u1', { truckId: 't1', event: history.EVENTS.LEFT });
-  history.getHistory('u1').pop();
-  expect(history.getHistory('u1')).toHaveLength(1);
-});
+test('records a JOINED event and returns the saved record', async () => {
+  const savedRecord = {
+    history_id: 1,
+    entry_id: 10,
+    event: 'JOINED',
+    position: 3,
+    created_at: '2026-11-06 10:00:00'
+  };
 
-test('unknown user has empty history', () => {
-  expect(history.getHistory('nobody')).toEqual([]);
-});
+  db.execute
+    .mockResolvedValueOnce([{ affectedRows: 1, insertId: 1 }])
+    .mockResolvedValueOnce([[savedRecord]]);
 
-test('reset clears everything', () => {
-  history.record('u1', { truckId: 't1', event: history.EVENTS.JOINED });
-  history.reset();
-  expect(history.getHistory('u1')).toEqual([]);
-});
-
-
-test('keeps history separate for different users', () => {
-  history.record('u1', {
-    truckId: 't1',
+  const result = await history.record(USER_ID, {
+    entryId: 10,
     event: history.EVENTS.JOINED,
+    position: 3
   });
 
-  history.record('u2', {
-    truckId: 't1',
-    event: history.EVENTS.LEFT,
-  });
-
-  expect(history.getHistory('u1')).toHaveLength(1);
-  expect(history.getHistory('u1')[0].event).toBe('JOINED');
-
-  expect(history.getHistory('u2')).toHaveLength(1);
-  expect(history.getHistory('u2')[0].event).toBe('LEFT');
+  expect(result).toEqual(savedRecord);
+  expect(db.execute).toHaveBeenCalledTimes(2);
+  expect(db.execute.mock.calls[0][1]).toEqual([
+    'JOINED',
+    3,
+    10,
+    USER_ID
+  ]);
 });
 
-test('records a timestamp for each event', () => {
-  const entry = history.record('u1', {
-    truckId: 't1',
-    event: history.EVENTS.JOINED,
+test('allows a null position', async () => {
+  db.execute
+    .mockResolvedValueOnce([{ affectedRows: 1, insertId: 2 }])
+    .mockResolvedValueOnce([[
+      { history_id: 2, entry_id: 10, event: 'SERVED', position: null }
+    ]]);
+
+  const result = await history.record(USER_ID, {
+    entryId: 10,
+    event: history.EVENTS.SERVED
   });
 
-  expect(entry.at).toEqual(expect.any(String));
-  expect(Number.isNaN(Date.parse(entry.at))).toBe(false);
+  expect(result.position).toBeNull();
+});
+
+test('rejects an invalid user ID', async () => {
+  await expect(
+    history.record('u1', {
+      entryId: 10,
+      event: history.EVENTS.JOINED
+    })
+  ).rejects.toThrow('A valid user ID is required.');
+
+  expect(db.execute).not.toHaveBeenCalled();
+});
+
+test('rejects an invalid entry ID', async () => {
+  await expect(
+    history.record(USER_ID, {
+      entryId: 0,
+      event: history.EVENTS.JOINED
+    })
+  ).rejects.toThrow('A valid queue entry ID is required.');
+});
+
+test('rejects an invalid event', async () => {
+  await expect(
+    history.record(USER_ID, {
+      entryId: 10,
+      event: 'INVALID'
+    })
+  ).rejects.toThrow('Invalid history event.');
+});
+
+test('rejects an invalid position', async () => {
+  await expect(
+    history.record(USER_ID, {
+      entryId: 10,
+      event: history.EVENTS.JOINED,
+      position: -1
+    })
+  ).rejects.toThrow('Position must be a non-negative integer or null.');
+});
+
+test('rejects a queue entry that does not belong to the user', async () => {
+  db.execute.mockResolvedValueOnce([{ affectedRows: 0, insertId: 0 }]);
+
+  await expect(
+    history.record(USER_ID, {
+      entryId: 10,
+      event: history.EVENTS.JOINED
+    })
+  ).rejects.toThrow('Queue entry not found for this user.');
+
+  expect(db.execute).toHaveBeenCalledTimes(1);
+});
+
+test('retrieves history for the requested user', async () => {
+  const records = [
+    { history_id: 2, event: 'SERVED' },
+    { history_id: 1, event: 'JOINED' }
+  ];
+
+  db.execute.mockResolvedValueOnce([records]);
+
+  const result = await history.getHistory(USER_ID);
+
+  expect(result).toEqual(records);
+  expect(db.execute).toHaveBeenCalledWith(
+    expect.stringContaining('WHERE co.user_id = ?'),
+    [USER_ID]
+  );
+});
+
+test('does not retrieve history with an invalid user ID', async () => {
+  await expect(history.getHistory('u1'))
+    .rejects.toThrow('A valid user ID is required.');
+
+  expect(db.execute).not.toHaveBeenCalled();
+});
+
+test('handles database errors when recording history', async () => {
+  db.execute.mockRejectedValueOnce(new Error('Database error'));
+
+  await expect(
+    history.record(USER_ID, {
+      entryId: 10,
+      event: history.EVENTS.JOINED
+    })
+  ).rejects.toThrow('Database error');
+});
+
+test('handles database errors when retrieving history', async () => {
+  db.execute.mockRejectedValueOnce(new Error('Database error'));
+
+  await expect(history.getHistory(USER_ID))
+    .rejects.toThrow('Database error');
+});
+
+test('handles a missing record after insertion', async () => {
+  db.execute
+    .mockResolvedValueOnce([{ affectedRows: 1, insertId: 3 }])
+    .mockResolvedValueOnce([[]]);
+
+  await expect(
+    history.record(USER_ID, {
+      entryId: 10,
+      event: history.EVENTS.JOINED
+    })
+  ).rejects.toThrow('Could not retrieve the saved history record.');
 });

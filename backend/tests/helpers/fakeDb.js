@@ -19,9 +19,11 @@ function createFakeDb({ queueStatus = "open", noQueue = false, knownUsers = null
     orderItems: [],
     entries: [],
     notifications: [],
+    history: [],
   };
   let nextOrderId = 1;
   let nextEntryId = 1;
+  let nextHistoryId = 1;
 
   const db = { state, failOn: null, released: 0 };
 
@@ -137,10 +139,69 @@ function createFakeDb({ queueStatus = "open", noQueue = false, knownUsers = null
       return [{ affectedRows: 1 }];
     }
 
+    if (q.startsWith("INSERT INTO QueueHistory")) {
+  const [event, position, entryId, userId] = params;
+
+  const entry = state.entries.find(
+    (e) => e.entry_id === entryId && orderOf(e)?.user_id === userId
+  );
+
+  if (!entry) {
+    return [{ affectedRows: 0, insertId: 0 }];
+  }
+
+  const record = {
+    history_id: nextHistoryId++,
+    entry_id: entryId,
+    event,
+    position,
+    created_at: new Date(),
+  };
+
+  state.history.push(record);
+
+  return [{
+    affectedRows: 1,
+    insertId: record.history_id,
+  }];
+}
+
+if (q.includes("FROM QueueHistory ch")) {
+  const rows = state.history
+    .map((record) => {
+      const entry = state.entries.find(
+        (e) => e.entry_id === record.entry_id
+      );
+
+      return {
+        ...record,
+        user_id: orderOf(entry).user_id,
+        queue_id: entry.queue_id,
+      };
+    })
+    .filter((record) => record.user_id === params[0])
+    .sort(
+      (a, b) =>
+        b.created_at - a.created_at ||
+        b.history_id - a.history_id
+    );
+
+  return [rows];
+}
+
+if (q.includes("FROM QueueHistory WHERE history_id = ?")) {
+  return [
+    state.history.filter(
+      (record) => record.history_id === params[0]
+    ),
+  ];
+}
+
     throw new Error(`FakeDb: unsupported query: ${q}`);
   }
 
   db.query = async (sql, params) => run(sql, params);
+  db.execute = async (sql, params) => run(sql, params);
 
   db.getConnection = async () => {
     let snapshot = null;

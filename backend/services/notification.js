@@ -1,92 +1,225 @@
-// Simulated notifications: stored in memory and logged. No real email/SMS.
-const TYPES = Object.freeze({ JOINED: 'JOINED', NEAR_TURN: 'NEAR_TURN', SERVED: 'SERVED' });
-const NEAR_THRESHOLD = 2; // first 2 people in line count as "close to being served"
-const db = require("../config/db");
 
-const store = new Map(); // userId -> array of notifications
-let counter = 0;
+const db = require('../config/db');
 
-function notify(userId, type, message, meta = {}) {
-  const notification = {
-    id: ++counter,
-    userId,
-    type,
-    message,
-    ...meta,
-    createdAt: new Date().toISOString(),
-  };
-  if (!store.has(userId)) store.set(userId, []);
-  store.get(userId).push(notification);
-  if (process.env.NODE_ENV !== 'test') {
-    console.log(`[NOTIFY] (${type}) -> ${userId}: ${message}`);
-  }
-  return notification;
-}
+const TYPES = Object.freeze({
+    JOINED: 'JOINED',
+    NEAR_FRONT: 'NEAR_FRONT',
+    NEAR_TURN: 'NEAR_FRONT',
+    SERVED: 'SERVED'
+});
 
-// Trigger 1: user joins a queue
-function notifyJoined(userId, name, truckId, position) {
-  return notify(
-    userId,
-    TYPES.JOINED,
-    `${name}, you joined the queue at ${truckId}. Your position: ${position}.`,
-    { truckId, position }
-  );
-}
+const NEAR_THRESHOLD = 2;
+const MAX_ENTRY_ID = 4294967295;
 
-// Trigger 2: user is close to being served.
-// `queue` is the array of entries for one truck: [{ userId, name, ... }, ...]
-// Each user is only notified once.
-function checkNearTurn(truckId, queue) {
-  const sent = [];
-  queue.forEach((entry, i) => {
-    if (i < NEAR_THRESHOLD && !entry.nearNotified) {
-      entry.nearNotified = true;
-      const position = i + 1;
-      const text =
-        position === 1
-          ? `${entry.name}, you're next at ${truckId}! Head to the truck.`
-          : `${entry.name}, you're almost up at ${truckId} (position ${position}).`;
-      sent.push(notify(entry.userId, TYPES.NEAR_TURN, text, { truckId, position }));
+// Validate user IDs.
+function validateUserId(userId) {
+    if (typeof userId !== 'string' || userId.length !== 36) {
+        throw new Error('User ID must be a valid 36-character ID.');
     }
-  });
-  return sent;
 }
 
-function notifyServed(userId, name, truckId) {
-  return notify(userId, TYPES.SERVED, `${name}, your order is ready at ${truckId}!`, { truckId });
+// Validate entry IDs.
+function validateEntryId(entryId) {
+    if (
+        entryId !== null &&
+        entryId !== undefined &&
+        (!Number.isInteger(entryId) ||
+         entryId < 1 ||
+         entryId > MAX_ENTRY_ID)
+    ) {
+        throw new Error('Entry ID must be a positive integer.');
+    }
 }
 
+// Validate notification IDs.
+function validateNotificationId(notificationId) {
+    if (
+        !Number.isInteger(notificationId) ||
+        notificationId < 1 ||
+        notificationId > MAX_ENTRY_ID
+    ) {
+        throw new Error('Invalid notification ID.');
+    }
+}
+
+// Create and save a notification in MySQL.
+async function notify(userId, type, message, meta = {}) {
+    validateUserId(userId);
+
+    if (typeof message !== 'string' ||
+        message.trim().length === 0 ||
+        message.length > 500) {
+        throw new Error('Message must be between 1 and 500 characters.');
+    }
+
+    if (!Object.values(TYPES).includes(type)) {
+        throw new Error('Invalid notification type.');
+    }
+
+    const entryId = meta.entryId ?? null;
+    validateEntryId(entryId);
+
+    const [result] = await db.execute(
+        `INSERT INTO Notification
+            (user_id, entry_id, type, message)
+         VALUES (?, ?, ?, ?)`,
+        [userId, entryId, type, message]
+    );
+
+    const [rows] = await db.execute(
+        `SELECT
+            notification_id AS id,
+            user_id AS userId,
+            entry_id AS entryId,
+            type,
+            message,
+            created_at AS createdAt,
+            status
+         FROM Notification
+         WHERE notification_id = ?`,
+        [result.insertId]
+    );
+
+    if (!rows || rows.length === 0) {
+        throw new Error('Failed to retrieve saved notification.');
+    }
+
+    return rows[0];
+}
+
+// Trigger 1: User joins a queue.
+async function notifyJoined(userId, name, truckId, position, entryId = null) {
+    if (typeof name !== 'string' || !name.trim()) {
+        throw new Error('Name is required.');
+    }
+
+    if (typeof truckId !== 'string' || !truckId.trim()) {
+        throw new Error('Truck ID is required.');
+    }
+
+    if (!Number.isInteger(position) || position < 1) {
+        throw new Error('Position must be a positive integer.');
+    }
+
+    validateEntryId(entryId);
+
+    return notify(
+        userId,
+        TYPES.JOINED,
+        `${name}, you joined the queue at ${truckId}. Your position: ${position}.`,
+        { entryId }
+    );
+}
+
+// Trigger 2: User is close to being served.
+async function checkNearTurn(truckId, queue) {
+    if (typeof truckId !== 'string' || !truckId.trim()) {
+        throw new Error('Truck ID is required.');
+    }
+
+    if (!Array.isArray(queue)) {
+        throw new Error('Queue must be an array.');
+    }
+
+    const sent = [];
+
+    for (let i = 0; i < Math.min(NEAR_THRESHOLD, queue.length); i++) {
+        const entry = queue[i];
+
+        if (!entry.nearNotified) {
+            const position = i + 1;
+
+            const message =
+                position === 1
+                    ? `${entry.name}, you're next at ${truckId}! Head to the truck.`
+                    : `${entry.name}, you're almost up at ${truckId} (position ${position}).`;
+
+            const result = await notify(
+                entry.userId,
+                TYPES.NEAR_FRONT,
+                message,
+                { entryId: entry.entryId ?? null }
+            );
+
+            // Only mark after the database insert succeeds.
+            entry.nearNotified = true;
+
+            sent.push(result);
+        }
+    }
+
+    return sent;
+}
+
+// Trigger 3: User's order has been served.
+async function notifyServed(userId, name, truckId, entryId = null) {
+    if (typeof name !== 'string' || !name.trim()) {
+        throw new Error('Name is required.');
+    }
+
+    if (typeof truckId !== 'string' || !truckId.trim()) {
+        throw new Error('Truck ID is required.');
+    }
+
+    validateEntryId(entryId);
+
+    return notify(
+        userId,
+        TYPES.SERVED,
+        `${name}, your order is ready at ${truckId}!`,
+        { entryId }
+    );
+}
+
+// Retrieve notifications belonging to a user.
 async function getNotifications(userId) {
-  const [rows] = await db.execute(
-    `SELECT
-       notification_id AS id,
-       user_id AS userId,
-       entry_id AS entryId,
-       type,
-       message,
-       created_at AS createdAt,
-       status
-     FROM Notification
-     WHERE user_id = ?
-     ORDER BY created_at DESC, notification_id DESC`,
-    [userId]
-  );
+    validateUserId(userId);
 
-  return rows;
+    const [rows] = await db.execute(
+        `SELECT
+            notification_id AS id,
+            user_id AS userId,
+            entry_id AS entryId,
+            type,
+            message,
+            created_at AS createdAt,
+            status
+         FROM Notification
+         WHERE user_id = ?
+         ORDER BY created_at DESC, notification_id DESC`,
+        [userId]
+    );
+
+    return rows;
 }
 
-function reset() {
-  store.clear();
-  counter = 0;
+// Mark one of the user's notifications as viewed.
+async function markAsViewed(notificationId, userId) {
+    validateNotificationId(notificationId);
+    validateUserId(userId);
+
+    const [result] = await db.execute(
+        `UPDATE Notification
+         SET status = 'viewed'
+         WHERE notification_id = ?
+           AND user_id = ?`,
+        [notificationId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+        throw new Error('Notification not found for this user.');
+    }
+
+    return { message: 'Notification marked as viewed.' };
 }
 
 module.exports = {
-  TYPES,
-  NEAR_THRESHOLD,
-  notify,
-  notifyJoined,
-  checkNearTurn,
-  notifyServed,
-  getNotifications,
-  reset,
+    TYPES,
+    NEAR_THRESHOLD,
+    notify,
+    notifyJoined,
+    checkNearTurn,
+    notifyServed,
+    getNotifications,
+    markAsViewed
 };
