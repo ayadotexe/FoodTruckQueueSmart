@@ -1,3 +1,9 @@
+CREATE DATABASE IF NOT EXISTS `queuesmart`
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_0900_ai_ci;
+
+USE `queuesmart`;
+
 CREATE TABLE `UserCredentials` (
   `user_id` char(36) NOT NULL,
   `email` varchar(254) NOT NULL,

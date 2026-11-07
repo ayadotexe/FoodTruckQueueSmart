@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/AuthRoutes");
 const queueRoutes = require("./routes/queueRoutes");
 const menuRoutes = require("./routes/MenuRoutes");
+const cartRoutes = require("./routes/cartRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/queue", queueRoutes);
 app.use("/api/menu", menuRoutes);
+app.use("/api/cart", cartRoutes);
 
 app.use((err, req, res, next) => {
   if (err.type === "entity.parse.failed") {
