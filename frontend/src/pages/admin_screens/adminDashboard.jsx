@@ -1,16 +1,32 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./adminDashboard.css";
 import userIcon from "../../assets/icon.png";
 
 function AdminDashboard() {
+    const navigate = useNavigate();
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    const handleLogout = () => {
+        navigate('/login');
+    };
+
     return (
         <div className="dashboard">
-            <div className="profile-icon">
-                <div className="profile-icon">
-                    <img src={userIcon} alt="icon" />
-                </div>
+            <div className="profile-icon profile-menu">
+                <img 
+                    src={userIcon} 
+                    alt="icon" 
+                    className="clickable-icon"
+                    onClick={() => setShowDropdown(!showDropdown)} 
+                />
+                {showDropdown && (
+                    <div className="profile-dropdown">
+                        <div className="dropdown-role">Admin</div>
+                        <hr />
+                        <div className="dropdown-action" onClick={handleLogout}>Log out</div>
+                    </div>
+                )}
             </div>
 
             <h1>Let's get started.</h1>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./QueueStatus.css";
-import { CURRENT_USER_ID } from "../../currentUser";
+import { getCurrentUserId } from "../../currentUser";
 
 const PICKUP_LOCATION = "Lot B, near the library"; // mock
 
@@ -29,7 +29,7 @@ function QueueStatus() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const userId = encodeURIComponent(CURRENT_USER_ID);
+      const userId = encodeURIComponent(getCurrentUserId());
       const res = await fetch(`/api/queue/status/${userId}`);
 
       if (res.ok) {
@@ -90,7 +90,7 @@ function QueueStatus() {
     setError("");
     try {
       const res = await fetch(
-        `/api/queue/leave/${encodeURIComponent(CURRENT_USER_ID)}`,
+        `/api/queue/leave/${encodeURIComponent(getCurrentUserId())}`,
         { method: "DELETE" }
       );
       if (!res.ok && res.status !== 404) {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserDashboard.css";
 import NotificationBanner from "./notificationBanner";
-import { CURRENT_USER_ID } from "../../currentUser";
+import { getCurrentUserId } from "../../currentUser";
 
 // mock data for the truck (pickup info and now serving belong to other modules)
 const MOCK_TRUCK = {
@@ -11,11 +11,6 @@ const MOCK_TRUCK = {
   hours: "11:00 AM - 8:00 PM",
   nowServing: 42,
 };
-
-const MOCK_NOTIFICATIONS = [
-  "Your order is being prepared.",
-  "You are getting close to the front of the queue!",
-];
 
 const POLL_MS = 5000; // refresh from the backend every 5 seconds
 
@@ -32,15 +27,24 @@ function UserDashboard() {
   const [myStatus, setMyStatus] = useState(null); // backend entry while waiting, else null
   const [served, setServed] = useState(false); // true = order is ready
   const [error, setError] = useState("");
+  const [notifications, setNotifications] = useState([]);
 
   const loadData = useCallback(async () => {
     try {
-      const userId = encodeURIComponent(CURRENT_USER_ID);
+      const userId = encodeURIComponent(getCurrentUserId());
 
       // truck-wide numbers
       const sumRes = await fetch("/api/queue/summary");
       if (sumRes.ok) setSummary(await sumRes.json());
 
+      const notifRes = await fetch(
+        `/api/queue/notifications/${userId}`
+      );
+
+      if (notifRes.ok) {
+        setNotifications(await notifRes.json());
+      }
+      
       // this user's own status
       const res = await fetch(`/api/queue/status/${userId}`);
       if (res.ok) {
@@ -54,6 +58,7 @@ function UserDashboard() {
         const latest = history[history.length - 1];
         setServed(Boolean(latest && latest.status === "served"));
       }
+      
       setError("");
     } catch {
       setError("Could not reach the server. Is the backend running?");
@@ -79,7 +84,7 @@ function UserDashboard() {
     setError("");
     try {
       const res = await fetch(
-        `/api/queue/leave/${encodeURIComponent(CURRENT_USER_ID)}`,
+        `/api/queue/leave/${encodeURIComponent(getCurrentUserId())}`,
         { method: "DELETE" }
       );
       if (!res.ok && res.status !== 404) {
@@ -173,17 +178,25 @@ function UserDashboard() {
         </button>
       </section>
 
+      
       <section className="notifications" aria-labelledby="notif-heading">
         <h2 id="notif-heading">Notifications</h2>
         <ul>
-          {MOCK_NOTIFICATIONS.slice(0, 2).map((n, i) => (
-            <li key={i} className="notification">{n}</li>
-          ))}
+          {notifications.length > 0 ? (
+            notifications.slice(-5).reverse().map((n) => (
+              <li key={n.id} className="notification">
+                {n.message}
+              </li>
+            ))
+          ) : (
+            <li className="notification">No notifications yet.</li>
+          )}
         </ul>
         <button type="button" onClick={() => navigate("/notifications")}>
           See all
         </button>
       </section>
+
     </div>
   );
 }
